@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 import type { FastifyError, FastifyInstance, FastifyReply } from "fastify";
 import type { IdGenerator } from "@arquitecture/core";
@@ -12,6 +14,8 @@ export interface CreateServerOptions {
   rootDir: string;
   port?: number;
   idGenerator?: IdGenerator;
+  /** Pasta com a interface compilada, servida em "/". Sem ela, só a API responde. */
+  webDir?: string;
   /** Substitui operações de disco (testes). */
   fs?: Partial<FsOps>;
 }
@@ -37,6 +41,11 @@ export function createServer(opts: CreateServerOptions): ArchitectureServer {
   const port = opts.port ?? DEFAULT_PORT;
 
   app.addHook("onReady", () => store.load());
+
+  if (opts.webDir && existsSync(opts.webDir)) {
+    // A API é registrada com rotas próprias, que têm precedência sobre o curinga dos arquivos estáticos.
+    void app.register(fastifyStatic, { root: opts.webDir });
+  }
 
   // JSON malformado ou outro erro de parse do corpo vira 400 no formato de erros do núcleo.
   app.setErrorHandler((err: FastifyError, _req, reply) => {
