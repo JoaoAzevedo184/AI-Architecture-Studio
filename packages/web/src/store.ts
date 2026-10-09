@@ -144,7 +144,7 @@ async function execNow(op: Op, opts: { fromUndo?: boolean }): Promise<{ ok: bool
     const r = await postOperation(op.type, op.input, get().revision);
     if (r.ok) {
       const { model, revision, result } = r.data;
-      const inv = opts.fromUndo ? null : inverseOf(op, before, result);
+      const inv = opts.fromUndo ? null : inverseOf(op, before, result, get().layout);
       set((s) => ({
         model,
         revision,
@@ -152,6 +152,7 @@ async function execNow(op: Op, opts: { fromUndo?: boolean }): Promise<{ ok: bool
         selection: stillExists(model, s.selection) ? s.selection : null,
       }));
       syncHash();
+      if (op.positions) await savePositions(op.positions);
       return { ok: true, result };
     }
     if (r.status === 409) {
@@ -184,8 +185,10 @@ export async function undo(): Promise<void> {
 // Posições: otimista no cliente (evita voltar ao soltar o nó); a resposta do servidor prevalece.
 let layoutChain: Promise<unknown> = Promise.resolve();
 
-export function savePosition(id: string, pos: Position): Promise<void> {
-  set((s) => ({ layout: { ...s.layout, [id]: pos } }));
+export const savePosition = (id: string, pos: Position) => savePositions({ [id]: pos });
+
+export function savePositions(positions: Record<string, Position>): Promise<void> {
+  set((s) => ({ layout: { ...s.layout, ...positions } }));
   const run = layoutChain.then(async () => {
     try {
       const r = await putLayout({ schemaVersion: 1, positions: get().layout });

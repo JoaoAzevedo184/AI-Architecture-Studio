@@ -100,7 +100,7 @@ function ConfirmRemove() {
         <strong>Remover «{name}»?</strong>
         <p>
           Serão removidos {req.nodes} {req.nodes === 1 ? "nó" : "nós"} e {req.edges} {req.edges === 1 ? "conexão" : "conexões"}.
-          Esta ação não pode ser desfeita.
+          Ctrl+Z desfaz a remoção.
         </p>
         <div className="row">
           <button onClick={cancelRemove} data-testid="confirm-cancel">Cancelar</button>
