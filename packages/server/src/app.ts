@@ -79,6 +79,9 @@ export function createServer(opts: CreateServerOptions): ArchitectureServer {
     if (needsId.includes(type as OperationType) && typeof input.id !== "string") {
       return badRequest(reply, "/input/id", "O campo id é obrigatório e deve ser texto", "Informe o id do nó ou da conexão");
     }
+    if (type === "restoreSubtree" && !(Array.isArray(input.nodes) && Array.isArray(input.edges))) {
+      return badRequest(reply, "/input", "restoreSubtree exige as listas nodes e edges", "Envie { nodes: [...], edges: [...] } com os itens devolvidos por removeNode");
+    }
     if (type === "moveNode" && !("parent" in input && (input.parent === null || typeof input.parent === "string"))) {
       return badRequest(reply, "/input/parent", "O campo parent é obrigatório (id ou null)", "Use o id do novo pai ou null para a raiz");
     }
@@ -109,7 +112,11 @@ export function createServer(opts: CreateServerOptions): ArchitectureServer {
       const a = app.server.address();
       return { host: HOST, port: typeof a === "object" && a ? a.port : port };
     },
-    close: () => app.close(),
+    async close() {
+      // Para de aceitar conexões, conclui as requisições em andamento e espera a fila de escrita.
+      await app.close();
+      await store.drain();
+    },
   };
 }
 

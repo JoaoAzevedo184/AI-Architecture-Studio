@@ -8,6 +8,7 @@ import {
   pruneLayout,
   removeEdge,
   removeNode,
+  restoreSubtree,
   serializeLayout,
   serializeModel,
   updateEdge,
@@ -32,6 +33,7 @@ export const OPERATION_TYPES = [
   "addEdge",
   "updateEdge",
   "removeEdge",
+  "restoreSubtree",
 ] as const;
 export type OperationType = (typeof OPERATION_TYPES)[number];
 
@@ -71,7 +73,7 @@ export class Store {
   private layout: LayoutFile = { schemaVersion: 1, positions: {} };
   private tail: Promise<unknown> = Promise.resolve();
   private readonly fs: FsOps;
-  private readonly modelPath: string;
+  readonly modelPath: string;
   private readonly layoutPath: string;
   private readonly idGenerator: IdGenerator;
 
@@ -117,6 +119,11 @@ export class Store {
     } catch {
       // Layout ausente, ilegível ou inválido equivale a "sem posições".
     }
+  }
+
+  /** Espera a fila de escrita esvaziar (usado no encerramento). */
+  drain(): Promise<void> {
+    return this.tail.then(() => undefined);
   }
 
   /** Posições sem ids órfãos, conforme o modelo atual. */
@@ -184,6 +191,8 @@ export class Store {
         return updateEdge(m, id as string, rest as never);
       case "removeEdge":
         return removeEdge(m, id as string);
+      case "restoreSubtree":
+        return restoreSubtree(m, i as never);
     }
   }
 
