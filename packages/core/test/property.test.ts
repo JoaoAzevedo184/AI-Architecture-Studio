@@ -17,7 +17,7 @@ import {
 import type { ArchitectureModel, OpResult } from "../src/index.js";
 import { clone, deepFreeze, seqIds } from "./helpers.js";
 
-// Picks are indexes resolved against the current model; `g` forces a nonexistent id.
+// Escolhas são índices resolvidos contra o modelo corrente; `g` força um id inexistente.
 const pick = fc.nat(50);
 const maybeGarbage = fc.boolean();
 const op = fc.oneof(
@@ -82,7 +82,7 @@ describe("property: random operation sequences", () => {
       }),
       { numRuns: 300 },
     );
-    // guards against a vacuous run: non-trivial models and real rejections
+    // evita execução vazia: modelos não triviais e rejeições reais
     expect(accepted).toBeGreaterThan(500);
     expect(rejected).toBeGreaterThan(500);
     expect(maxNodes).toBeGreaterThan(5);

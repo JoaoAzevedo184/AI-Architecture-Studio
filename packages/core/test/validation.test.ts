@@ -124,7 +124,7 @@ describe("validateModel", () => {
     const m = clone(specExample) as Record<string, any>;
     m.nodes[3].lenses.mystery = { whatever: [1, 2, { deep: true }] };
     expect(validateModel(m, lensSchemas).ok).toBe(true);
-    // a lens is only validated when present in the map
+    // lente só é validada quando consta no mapa
     m.nodes[3].lenses.security = { authn: "kerberos" };
     expect(validateModel(m).ok).toBe(true);
   });

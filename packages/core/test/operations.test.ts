@@ -11,6 +11,7 @@ import {
   updateNode,
   validateModel,
 } from "../src/index.js";
+import type { LensSchemas } from "../src/index.js";
 import { clone, deepFreeze, expectError, expectOk, sampleModel, seqIds } from "./helpers.js";
 
 describe("addNode", () => {
@@ -86,7 +87,7 @@ describe("updateNode", () => {
   });
 
   it("fails for an unknown id", () => {
-    expectError(updateNode(sampleModel(), "nope", { name: "A" }), "SCHEMA_INVALID", "/id");
+    expectError(updateNode(sampleModel(), "nope", { name: "A" }), "NOT_FOUND", "/id");
   });
 
   it("fails with SCHEMA_INVALID for an invalid kind", () => {
@@ -126,13 +127,13 @@ describe("moveNode", () => {
   });
 
   it("fails with EDGE_TO_ANCESTOR when the move makes an edge touch an ancestor", () => {
-    // api→db: moving db inside api makes db a descendant of api
+    // api→db: mover db para dentro de api faz db descender de api
     const r = moveNode(sampleModel(), "n_4", "n_3");
     expectError(r, "EDGE_TO_ANCESTOR", "/edges/1/target");
   });
 
   it("fails for an unknown id", () => {
-    expectError(moveNode(sampleModel(), "nope", null), "SCHEMA_INVALID", "/id");
+    expectError(moveNode(sampleModel(), "nope", null), "NOT_FOUND", "/id");
   });
 });
 
@@ -157,7 +158,7 @@ describe("removeNode", () => {
   });
 
   it("fails for an unknown id", () => {
-    expectError(removeNode(sampleModel(), "nope"), "SCHEMA_INVALID", "/id");
+    expectError(removeNode(sampleModel(), "nope"), "NOT_FOUND", "/id");
   });
 
   it("terminates on a corrupted parent cycle", () => {
@@ -228,7 +229,7 @@ describe("updateEdge", () => {
   });
 
   it("fails for an unknown id and an invalid kind", () => {
-    expectError(updateEdge(sampleModel(), "nope", {}), "SCHEMA_INVALID", "/id");
+    expectError(updateEdge(sampleModel(), "nope", {}), "NOT_FOUND", "/id");
     expectError(updateEdge(sampleModel(), "e_6", { kind: "x" as never }), "SCHEMA_INVALID", "/edges/0/kind");
   });
 });
@@ -243,7 +244,7 @@ describe("removeEdge", () => {
   });
 
   it("fails for an unknown id", () => {
-    expectError(removeEdge(sampleModel(), "nope"), "SCHEMA_INVALID", "/id");
+    expectError(removeEdge(sampleModel(), "nope"), "NOT_FOUND", "/id");
   });
 });
 
@@ -257,5 +258,29 @@ describe("checkRevision", () => {
     const e = expectError(r, "REVISION_CONFLICT", "/revision");
     expect(e.currentRevision).toBe(5);
     expect(e.message).toContain("5");
+  });
+});
+
+describe("lensSchemas parameter", () => {
+  const schemas: LensSchemas = { security: { type: "object", required: ["authn"] } };
+  const bad = () => {
+    const m = clone(sampleModel());
+    m.nodes[2]!.lenses = { security: {} };
+    return m;
+  };
+
+  it("every operation reports LENS_INVALID when the model has an invalid registered lens", () => {
+    const path = "/nodes/2/lenses/security/authn";
+    expectError(addNode(bad(), { name: "A", kind: "service" }, seqIds(), schemas), "LENS_INVALID", path);
+    expectError(updateNode(bad(), "n_1", { name: "A" }, schemas), "LENS_INVALID", path);
+    expectError(moveNode(bad(), "n_1", null, schemas), "LENS_INVALID", path);
+    expectError(removeNode(bad(), "n_5", schemas), "LENS_INVALID", path);
+    expectError(addEdge(bad(), { source: "n_3", target: "n_5" }, seqIds(), schemas), "LENS_INVALID", path);
+    expectError(updateEdge(bad(), "e_6", { label: "x" }, schemas), "LENS_INVALID", path);
+    expectError(removeEdge(bad(), "e_6", schemas), "LENS_INVALID", path);
+  });
+
+  it("without the map the same operation succeeds", () => {
+    expect(updateNode(bad(), "n_1", { name: "A" }).ok).toBe(true);
   });
 });
