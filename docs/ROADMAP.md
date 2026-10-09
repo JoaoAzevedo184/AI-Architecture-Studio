@@ -22,7 +22,7 @@ Núcleo (`packages/core`)
 
 - [x] JSON Schema da `schemaVersion` 1 (nós, conexões, `meta`, `lenses`)
 - [x] Operações puras: criar, atualizar, mover e remover nó; criar, atualizar e remover conexão
-- [x] Regras de integridade com os nove códigos de erro
+- [x] Regras de integridade com os dez códigos de erro
 - [x] Erro estruturado com `code`, `message`, `path` e `hint`
 - [x] Exclusão em cascata com lista do que foi removido
 - [x] Serialização com ordem de chaves estável
@@ -32,17 +32,17 @@ Núcleo (`packages/core`)
 
 Servidor local (`packages/server`)
 
-- [ ] Carregar e validar `docs/architecture.json` na inicialização
-- [ ] Fila única de escrita
-- [ ] Gravação atômica (arquivo temporário e renomeação)
-- [ ] Incremento de `revision` e resposta `REVISION_CONFLICT`
-- [ ] Leitura e gravação de `docs/architecture.layout.json` (DA-03)
-  - [ ] Gravação pela mesma fila, de forma atômica
-  - [ ] Sem incremento de `revision` e sem `REVISION_CONFLICT`; vale a última escrita
-  - [ ] Posição de `id` órfão ignorada ao carregar e descartada na próxima gravação
-  - [ ] Arquivo ausente ou inválido tratado como "sem posições", sem bloquear escritas
-- [ ] API HTTP para a interface, escutando em `127.0.0.1`
- - [ ] Recusar gravação de layout malformada com `SCHEMA_INVALID`
+- [x] Carregar e validar `docs/architecture.json` na inicialização
+- [x] Fila única de escrita
+- [x] Gravação atômica (arquivo temporário e renomeação)
+- [x] Incremento de `revision` e resposta `REVISION_CONFLICT`
+- [x] Leitura e gravação de `docs/architecture.layout.json` (DA-03)
+  - [x] Gravação pela mesma fila, de forma atômica
+  - [x] Sem incremento de `revision` e sem `REVISION_CONFLICT`; vale a última escrita
+  - [x] Posição de `id` órfão ignorada ao carregar e descartada na próxima gravação
+  - [x] Arquivo ausente ou inválido tratado como "sem posições", sem bloquear escritas
+- [x] API HTTP para a interface, escutando em `127.0.0.1`
+ - [x] Recusar gravação de layout malformada com `SCHEMA_INVALID`
 
 
 Interface (`packages/web`)

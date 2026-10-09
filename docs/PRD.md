@@ -7,7 +7,7 @@
 | Produto | AI Architecture Studio |
 | Tipo | Product Requirements Document |
 | Finalidade | Referência de produto para orientar o desenvolvimento com Claude Code e OpenAI Codex |
-| Versão | 0.4 |
+| Versão | 0.5 |
 | Data | 2026-10-08 |
 | Status | Rascunho, não aprovado |
 | Documento de origem | AI Architecture Studio — Especificação Técnica (citada como **ET §n**) |
@@ -356,12 +356,12 @@ Todas as ferramentas são da **fase 2**. Os esquemas completos de parâmetros n�
 | `get_model` | Ler o modelo ou uma subárvore | `scope?` (id de nó), `depth?` | Modelo ou subárvore | — | Comportamento para `scope` inexistente não definido |
 | `list_nodes` | Listar nós de forma resumida | `parent?`, `kind?` | Lista com `id`, `name`, `kind`, `tech`, `parent` | — | Não definido |
 | `add_node` | Criar um nó | `name`, `kind`, `tech?`, `parent?` | `id` gerado e nova `revision` | Esquema, `PARENT_NOT_FOUND` | Erro estruturado; nada gravado |
-| `update_node` | Alterar um nó | `id` e campos a alterar | Nova `revision` | Esquema | Erro estruturado; nada gravado |
-| `move_node` | Mudar o nó de nível | `id`, `parent` | Nova `revision` | `PARENT_NOT_FOUND`, `PARENT_CYCLE` | Erro estruturado; nada gravado |
-| `remove_node` | Remover em cascata | `id` | Lista do que foi removido e nova `revision` | — | Comportamento para `id` inexistente não definido |
+| `update_node` | Alterar um nó | `id` e campos a alterar | Nova `revision` | Esquema | `NOT_FOUND` para `id` inexistente; erro estruturado; nada gravado |
+| `move_node` | Mudar o nó de nível | `id`, `parent` | Nova `revision` | `PARENT_NOT_FOUND`, `PARENT_CYCLE` | `NOT_FOUND` para `id` inexistente; erro estruturado; nada gravado |
+| `remove_node` | Remover em cascata | `id` | Lista do que foi removido e nova `revision` | — | `NOT_FOUND` para `id` inexistente |
 | `add_edge` | Criar uma conexão | `source`, `target`, `label?`, `kind?` | `id` da conexão e nova `revision` | `EDGE_ENDPOINT_NOT_FOUND`, `EDGE_SELF_LOOP`, `EDGE_TO_ANCESTOR` | Erro estruturado; nada gravado |
-| `update_edge` | Alterar uma conexão | `id` e campos a alterar | Nova `revision` | Mesmas de `add_edge` | Erro estruturado; nada gravado |
-| `remove_edge` | Remover uma conexão | `id` | Nova `revision` | — | Não definido |
+| `update_edge` | Alterar uma conexão | `id` e campos a alterar | Nova `revision` | Mesmas de `add_edge` | `NOT_FOUND` para `id` inexistente; erro estruturado; nada gravado |
+| `remove_edge` | Remover uma conexão | `id` | Nova `revision` | — | `NOT_FOUND` para `id` inexistente |
 | `set_lens` | Substituir o trecho de uma lente no nó | `nodeId`, `lens`, `data` | Nova `revision` | `LENS_INVALID` para lente conhecida | Lente desconhecida: não definido (DA-10) |
 | `apply_batch` | Aplicar várias operações como uma | Lista de operações | Uma nova `revision`; um evento | Todas as regras, sobre o resultado final | Tudo ou nada; erros estruturados |
 | `validate` | Verificar o modelo atual | Nenhuma | Lista de erros (vazia se válido) | Todas as regras | — |
@@ -401,8 +401,9 @@ Todas as ferramentas são da **fase 2**. Os esquemas completos de parâmetros n�
 | RN-13 | A gravação é atômica | — | O arquivo nunca fica parcialmente escrito |
 | RN-14 | Operação sobre revisão antiga é recusada | `REVISION_CONFLICT` | A resposta traz a revisão corrente |
 | RN-15 | Arquivo externo inválido não é adotado | — | Último modelo válido mantido; aviso; escritas recusadas até corrigir ou restaurar |
+| RN-16 | Operação sobre `id` de nó ou conexão inexistente é recusada | `NOT_FOUND` | `update_node`, `move_node`, `remove_node`, `update_edge` e `remove_edge` com `id` inexistente devolvem o erro, com `path` no campo de entrada (ex.: `/id`); nada é gravado |
 
-Os nove códigos de erro da especificação estão cobertos: `SCHEMA_INVALID`, `DUPLICATE_ID`, `PARENT_NOT_FOUND`, `PARENT_CYCLE`, `EDGE_ENDPOINT_NOT_FOUND`, `EDGE_SELF_LOOP`, `EDGE_TO_ANCESTOR`, `LENS_INVALID` e `REVISION_CONFLICT`.
+Os dez códigos de erro estão cobertos: `SCHEMA_INVALID`, `DUPLICATE_ID`, `PARENT_NOT_FOUND`, `PARENT_CYCLE`, `EDGE_ENDPOINT_NOT_FOUND`, `EDGE_SELF_LOOP`, `EDGE_TO_ANCESTOR`, `LENS_INVALID`, `REVISION_CONFLICT` e `NOT_FOUND` (este último acrescentado nesta versão do PRD, RN-16).
 
 ## 11. Modelo de dados e arquivos
 
@@ -580,7 +581,7 @@ A especificação define metadados de segurança na conexão, mas o modelo da ET
 | ID | Grupo | Cobre | Requisitos | MVP | Classificação |
 | --- | --- | --- | --- | --- | --- |
 | T-01 | Unitários do núcleo | Cada operação | FR-004 a FR-009, FR-015 a FR-017, FR-031 | Sim | Confirmado (ET §8) |
-| T-02 | Regras de integridade | Cada código de erro e RN-01 a RN-15 | FR-029, FR-030, NFR-007, NFR-009 | Sim | Confirmado (ET §8) |
+| T-02 | Regras de integridade | Cada código de erro e RN-01 a RN-16 | FR-029, FR-030, NFR-007, NFR-009 | Sim | Confirmado (ET §8) |
 | T-03 | Baseados em propriedades | Sequências aleatórias de operações válidas sempre validam | FR-029, NFR-004 | Sim | Confirmado (ET §8) |
 | T-04 | Serialização e ida e volta | Carregar, gravar e recarregar produz o mesmo conteúdo | FR-003, FR-024, FR-028, NFR-014 | Sim | Confirmado (ET §8) |
 | T-05 | Concorrência | Duas escritas com a mesma `expectedRevision`: um aceite e um `REVISION_CONFLICT` | FR-026, FR-027, FR-036, FR-040, NFR-005 | Sim | Confirmado (ET §8) |
@@ -755,7 +756,7 @@ Nenhuma destas inconsistências foi resolvida por este PRD além de IN-01, em qu
 | Seções produzidas | 20 da estrutura solicitada, mais a seção 21 (inconsistências) e este resumo |
 | Requisitos funcionais | 49 (FR-001 a FR-049), em 14 domínios |
 | Requisitos não funcionais | 16 (NFR-001 a NFR-016) |
-| Regras de negócio | 15 (RN-01 a RN-15), cobrindo os 9 códigos de erro |
+| Regras de negócio | 16 (RN-01 a RN-16), cobrindo os 10 códigos de erro |
 | Ferramentas MCP documentadas | 12 |
 | Jornadas | 10 |
 | Grupos de teste | 10 (T-01 a T-10), 3 deles propostos |

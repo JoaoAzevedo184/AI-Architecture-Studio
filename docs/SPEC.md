@@ -103,6 +103,7 @@ Nenhuma escrita chega ao disco sem passar pela validação completa do modelo re
 | `EDGE_TO_ANCESTOR` | Conexão entre um nó e o próprio ancestral |
 | `LENS_INVALID` | O trecho de uma lente conhecida não obedece ao esquema dela |
 | `REVISION_CONFLICT` | A operação foi feita sobre uma revisão antiga |
+| `NOT_FOUND` | A operação aponta, no campo de entrada (ex.: `/id`), para um nó ou conexão que não existe |
 
 **Formato do erro.** Todo erro traz `code`, `message` em linguagem direta, `path` (ponteiro JSON até o elemento) e `hint` com a correção possível. Exemplo: `{ "code": "EDGE_ENDPOINT_NOT_FOUND", "path": "/edges/3/target", "message": "O destino n_cache não existe", "hint": "Crie o nó antes ou use um id retornado por list_nodes" }`. O agente consegue se corrigir a partir disso sem adivinhar.
 

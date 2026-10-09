@@ -179,6 +179,7 @@ Duas camadas: forma (JSON Schema) e integridade (regras entre elementos). O mode
 | `EDGE_TO_ANCESTOR` | Conexão entre um nó e o próprio ancestral |
 | `LENS_INVALID` | O trecho de uma lente conhecida não obedece ao esquema dela |
 | `REVISION_CONFLICT` | A operação foi feita sobre uma revisão antiga |
+| `NOT_FOUND` | A operação aponta, no campo de entrada (ex.: `/id`), para um nó ou conexão que não existe |
 
 Todo erro traz `code`, `message`, `path` (ponteiro JSON) e `hint`.
 
