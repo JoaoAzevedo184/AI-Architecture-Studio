@@ -119,6 +119,13 @@ packages/
   cli/      comando arquitecture
 ```
 
+## Documentação
+
+- [Especificação técnica](docs/SPEC.md): especificação de origem, citada no PRD como `ET §n`.
+- [PRD](docs/PRD.md): requisitos, regras de negócio, decisões em aberto e rastreabilidade.
+- [Arquitetura](docs/ARCHITECTURE.md): como a ferramenta é construída (componentes, fluxo de escrita, modelo, validação).
+- [Roadmap](docs/ROADMAP.md): fases de entrega e checklist de cada uma.
+
 ## Roadmap
 
 | Fase | Entrega |
