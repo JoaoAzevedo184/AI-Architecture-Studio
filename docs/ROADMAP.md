@@ -20,15 +20,15 @@ Este roadmap não tem datas: a ordem é fixa, o ritmo não. Documentos relaciona
 
 Núcleo (`packages/core`)
 
-- [ ] JSON Schema da `schemaVersion` 1 (nós, conexões, `meta`, `lenses`)
-- [ ] Operações puras: criar, atualizar, mover e remover nó; criar, atualizar e remover conexão
-- [ ] Regras de integridade com os nove códigos de erro
-- [ ] Erro estruturado com `code`, `message`, `path` e `hint`
-- [ ] Exclusão em cascata com lista do que foi removido
-- [ ] Serialização com ordem de chaves estável
-- [ ] Testes unitários por operação e por código de erro
-- [ ] Teste de propriedade: sequências aleatórias de operações válidas sempre validam
-- [ ] Teste de ida e volta: carregar, gravar e recarregar produz o mesmo conteúdo
+- [x] JSON Schema da `schemaVersion` 1 (nós, conexões, `meta`, `lenses`)
+- [x] Operações puras: criar, atualizar, mover e remover nó; criar, atualizar e remover conexão
+- [x] Regras de integridade com os nove códigos de erro
+- [x] Erro estruturado com `code`, `message`, `path` e `hint`
+- [x] Exclusão em cascata com lista do que foi removido
+- [x] Serialização com ordem de chaves estável
+- [x] Testes unitários por operação e por código de erro
+- [x] Teste de propriedade: sequências aleatórias de operações válidas sempre validam
+- [x] Teste de ida e volta: carregar, gravar e recarregar produz o mesmo conteúdo
 
 Servidor local (`packages/server`)
 

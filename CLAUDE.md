@@ -4,18 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Specification only — no code yet. The repo holds `README.md` and four specs in `docs/` (all in Portuguese):
+Phase 1 in progress: `packages/core` is implemented (npm workspaces, TypeScript strict ESM, Vitest, fast-check, Ajv); `server`, `web` and `cli` do not exist yet. The repo holds `README.md` and four specs in `docs/` (all in Portuguese):
 
 - [`docs/SPEC.md`](docs/SPEC.md) — the original technical specification. The PRD's `ET §n` references point to its sections.
 - [`docs/PRD.md`](docs/PRD.md) — requirements (`FR-nnn`, `NFR-nnn`), open decisions (`DA-nn`, section 18), known spec inconsistencies (`IN-nn`, section 21).
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the tool is built. Source of truth for design.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — phase checklists.
 
-Next step is phase 1 (Editor). Check the phase 1 checklist in the roadmap before starting work, and tick items as they land.
+Next step is phase 1 `packages/server`. Check the phase 1 checklist in the roadmap before starting work, and tick items as they land.
 
 Open decisions: flag every `DA-nn` a change touches.
 
-Planned commands (from README, not yet real): `npm install`, `npm run dev`, `npm test`. The CLI binary is `arquitecture` (spelled that way; npm name availability still unconfirmed).
+Real commands (run from the root, they fan out to every workspace): `npm install`, `npm run build`, `npm run typecheck`, `npm test`. Planned, not yet real: `npm run dev`. The CLI binary is `arquitecture` (spelled that way; npm name availability still unconfirmed).
 
 ## Working rules
 
