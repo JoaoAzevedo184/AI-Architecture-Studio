@@ -7,6 +7,7 @@ import {
   moveNode,
   removeEdge,
   removeNode,
+  restoreSubtree,
   serializeModel,
   updateEdge,
   updateNode,
@@ -14,7 +15,7 @@ import {
   NODE_KINDS,
   EDGE_KINDS,
 } from "../src/index.js";
-import type { ArchitectureModel, OpResult } from "../src/index.js";
+import type { ArchitectureModel, OpResult, Subtree } from "../src/index.js";
 import { clone, deepFreeze, seqIds } from "./helpers.js";
 
 // Escolhas são índices resolvidos contra o modelo corrente; `g` força um id inexistente.
@@ -28,10 +29,11 @@ const op = fc.oneof(
   { weight: 4, arbitrary: fc.record({ t: fc.constant("addEdge" as const), a: pick, b: pick, kind: fc.nat(2), g: maybeGarbage }) },
   fc.record({ t: fc.constant("updateEdge" as const), who: pick, a: pick, g: maybeGarbage }),
   fc.record({ t: fc.constant("removeEdge" as const), who: pick, g: maybeGarbage }),
+  { weight: 1, arbitrary: fc.record({ t: fc.constant("restore" as const) }) },
 );
 type Op = any;
 
-function apply(m: ArchitectureModel, o: Op, gen: ReturnType<typeof seqIds>): OpResult {
+function apply(m: ArchitectureModel, o: Op, gen: ReturnType<typeof seqIds>, memo: { removed: Subtree }): OpResult {
   const nid = (i: number, g = false) => (g ? "ghost" : m.nodes.length ? m.nodes[i % m.nodes.length]!.id : "none");
   const eid = (i: number, g = false) => (g ? "ghost" : m.edges.length ? m.edges[i % m.edges.length]!.id : "none");
   switch (o.t) {
@@ -42,7 +44,13 @@ function apply(m: ArchitectureModel, o: Op, gen: ReturnType<typeof seqIds>): OpR
     case "moveNode":
       return moveNode(m, nid(o.who, o.g), o.root ? null : nid(o.parent));
     case "removeNode":
-      return removeNode(m, nid(o.who, o.g));
+      {
+        const r = removeNode(m, nid(o.who, o.g));
+        if (r.ok) memo.removed = { nodes: r.removedNodes, edges: r.removedEdges };
+        return r;
+      }
+    case "restore":
+      return restoreSubtree(m, memo.removed);
     case "addEdge":
       return addEdge(m, { source: nid(o.a), target: o.g ? "ghost" : nid(o.b), kind: EDGE_KINDS[o.kind % 3]! }, gen);
     case "updateEdge":
@@ -62,10 +70,11 @@ describe("property: random operation sequences", () => {
     fc.assert(
       fc.property(fc.array(op, { minLength: 20, maxLength: 60 }), (ops) => {
         const gen = seqIds();
+        const memo = { removed: { nodes: [], edges: [] } as Subtree };
         let m = deepFreeze(createEmptyModel("P"));
         for (const o of ops) {
           const before = clone(m);
-          const r = apply(m, o, gen);
+          const r = apply(m, o, gen, memo);
           if (r.ok) {
             accepted++;
             expect(validateModel(r.model).ok).toBe(true);

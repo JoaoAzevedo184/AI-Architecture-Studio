@@ -7,6 +7,7 @@ import {
   moveNode,
   removeEdge,
   removeNode,
+  restoreSubtree,
   updateEdge,
   updateNode,
   validateModel,
@@ -169,6 +170,46 @@ describe("removeNode", () => {
   });
 });
 
+describe("restoreSubtree", () => {
+  it("brings back removed nodes and edges with the original ids", () => {
+    const m = sampleModel();
+    const removed = removeNode(m, "n_2");
+    expectOk(removed);
+    expect(removed.removedNodes.map((n) => n.id)).toEqual(["n_2", "n_3", "n_4", "n_5"]);
+    expect(removed.removedEdges.map((e) => e.id)).toEqual(["e_6", "e_7", "e_8"]);
+    const r = restoreSubtree(removed.model, { nodes: removed.removedNodes, edges: removed.removedEdges });
+    expectOk(r);
+    expect(r.model.nodes.map((n) => n.id).sort()).toEqual(m.nodes.map((n) => n.id).sort());
+    expect(r.model.edges.map((e) => e.id).sort()).toEqual(m.edges.map((e) => e.id).sort());
+    expect(r.model.nodes.find((n) => n.id === "n_3")).toEqual(m.nodes.find((n) => n.id === "n_3"));
+  });
+
+  it("does not mutate its input", () => {
+    const m = deepFreeze(createEmptyModel("X"));
+    const r = restoreSubtree(m, { nodes: [{ id: "n_1", name: "A", kind: "service", parent: null }], edges: [] });
+    expectOk(r);
+    expect(m.nodes).toHaveLength(0);
+  });
+
+  it("fails with DUPLICATE_ID when an id already exists", () => {
+    const m = sampleModel();
+    const r = restoreSubtree(m, { nodes: [clone(m.nodes[0]!)], edges: [] });
+    expectError(r, "DUPLICATE_ID", `/nodes/${m.nodes.length}/id`);
+    const e = restoreSubtree(m, { nodes: [], edges: [clone(m.edges[0]!)] });
+    expectError(e, "DUPLICATE_ID", `/edges/${m.edges.length}/id`);
+  });
+
+  it("fails with PARENT_NOT_FOUND and EDGE_ENDPOINT_NOT_FOUND when the context is gone", () => {
+    const m = sampleModel();
+    const removed = removeNode(m, "n_2");
+    expectOk(removed);
+    const child = removed.removedNodes.filter((n) => n.id === "n_3");
+    expectError(restoreSubtree(removed.model, { nodes: child, edges: [] }), "PARENT_NOT_FOUND", "/nodes/1/parent");
+    const edge = removed.removedEdges.filter((e) => e.id === "e_6");
+    expectError(restoreSubtree(removed.model, { nodes: [], edges: edge }), "EDGE_ENDPOINT_NOT_FOUND", "/edges/0/target");
+  });
+});
+
 describe("addEdge", () => {
   it("adds an edge with default kind sync", () => {
     const m = sampleModel();
@@ -278,6 +319,7 @@ describe("lensSchemas parameter", () => {
     expectError(addEdge(bad(), { source: "n_3", target: "n_5" }, seqIds(), schemas), "LENS_INVALID", path);
     expectError(updateEdge(bad(), "e_6", { label: "x" }, schemas), "LENS_INVALID", path);
     expectError(removeEdge(bad(), "e_6", schemas), "LENS_INVALID", path);
+    expectError(restoreSubtree(bad(), { nodes: [], edges: [] }, schemas), "LENS_INVALID", path);
   });
 
   it("without the map the same operation succeeds", () => {
