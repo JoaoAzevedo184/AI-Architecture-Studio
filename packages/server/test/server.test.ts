@@ -353,6 +353,28 @@ describe("layout", () => {
   });
 });
 
+describe("static web files", () => {
+  it("serves the compiled interface at / while /api keeps working", async () => {
+    const web = await tmp();
+    await writeFile(join(web, "index.html"), "<!doctype html><title>UI</title>");
+    await mkdir(join(web, "assets"));
+    await writeFile(join(web, "assets", "a.js"), "console.log(1)");
+    const { s, get } = await boot(await tmp(), { webDir: web });
+    const root = await s.app.inject({ method: "GET", url: "/" });
+    expect(root.statusCode).toBe(200);
+    expect(root.headers["content-type"]).toContain("text/html");
+    expect(root.body).toContain("<title>UI</title>");
+    expect((await s.app.inject({ method: "GET", url: "/assets/a.js" })).statusCode).toBe(200);
+    expect((await get("/api/health")).body).toEqual({ status: "ok" });
+    expect((await get("/api/model")).body.state).toBe("valid");
+  });
+
+  it("without webDir, / is not served", async () => {
+    const { s } = await boot(await tmp());
+    expect((await s.app.inject({ method: "GET", url: "/" })).statusCode).toBe(404);
+  });
+});
+
 describe("health and binding", () => {
   it("GET /api/health", async () => {
     const { get } = await boot(await tmp());
