@@ -7,7 +7,7 @@
 | Produto | AI Architecture Studio |
 | Tipo | Product Requirements Document |
 | Finalidade | Referência de produto para orientar o desenvolvimento com Claude Code e OpenAI Codex |
-| Versão | 0.5 |
+| Versão | 0.6 |
 | Data | 2026-10-08 |
 | Status | Rascunho, não aprovado |
 | Documento de origem | AI Architecture Studio — Especificação Técnica (citada como **ET §n**) |
@@ -144,7 +144,7 @@ O produto representa a arquitetura **declarada** no modelo. Ele não garante que
 - **Fluxo:** executa `npx arquitecture` na raiz; o servidor local inicia; o navegador abre o canvas vazio.
 - **Resultado:** canvas pronto para edição.
 - **Erros possíveis:** porta ocupada; falta de permissão de escrita.
-- **Recuperação:** não definida na especificação (DA-04, DA-09). A criação automática do arquivo e da pasta `docs/` é **Proposta**.
+- **Recuperação:** não definida na especificação (DA-04). O arquivo e a pasta `docs/` só são criados na primeira escrita aceita (DA-09, resolvida).
 
 ### J2. Criar uma arquitetura manualmente
 
@@ -178,7 +178,7 @@ O produto representa a arquitetura **declarada** no modelo. Ele não garante que
 - **Fluxo:** encerra o processo; executa `npx arquitecture` de novo.
 - **Resultado:** mesmos nós, conexões, hierarquia e posições. Posições de nós que não existem mais são ignoradas.
 - **Erros possíveis:** arquivo do modelo alterado e inválido no intervalo; arquivo de layout ausente ou inválido.
-- **Recuperação:** comportamento na inicialização com arquivo do modelo inválido não está definido (DA-06). Em execução, vale J9. Layout ausente ou inválido não bloqueia: é tratado como "sem posições" e os nós recebem posicionamento automático (DA-03, resolvida).
+- **Recuperação:** na inicialização com arquivo do modelo inválido, o servidor sobe, expõe os erros, recusa escritas e não sobrescreve o arquivo (DA-06, parte resolvida). Em execução, vale J9. Layout ausente ou inválido não bloqueia: é tratado como "sem posições" e os nós recebem posicionamento automático (DA-03, resolvida).
 
 ### J6. Solicitar a um agente o mapeamento de um repositório
 
@@ -231,7 +231,7 @@ Os requisitos das fases 3 a 5 estão descritos na seção 14 e não recebem iden
 | ID | Nome | Descrição | Justificativa | Ator | Prio | Fase | Critérios de aceitação | Dependências | Origem |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | FR-001 | Iniciar por `npx` | `npx arquitecture` na raiz do repositório inicia o servidor local e abre o canvas | Uso sem instalação nem serviço hospedado | Dev | P0 | 1 | Dado um repositório, quando executo o comando, então o canvas abre no navegador | — | ET §1, §9 |
-| FR-002 | Projeto sem modelo | Em pasta sem `docs/architecture.json`, a ferramenta apresenta um canvas vazio e utilizável | Critério da fase 1 parte de pasta vazia | Dev | P0 | 1 | Dado uma pasta vazia, quando inicio, então consigo criar o primeiro nó. Criar o arquivo e `docs/` automaticamente é **Proposto** (DA-09) | FR-001 | ET §8 (implícito) |
+| FR-002 | Projeto sem modelo | Em pasta sem `docs/architecture.json`, a ferramenta apresenta um canvas vazio e utilizável | Critério da fase 1 parte de pasta vazia | Dev | P0 | 1 | Dado uma pasta vazia, quando inicio, então consigo criar o primeiro nó. O arquivo e `docs/` só são criados na primeira escrita aceita (DA-09, resolvida) | FR-001 | ET §8 (implícito) |
 | FR-003 | Carregar modelo existente | Na inicialização, o servidor carrega e valida `docs/architecture.json` | Reabrir sem perda | Sistema | P0 | 1 | Dado um modelo válido salvo, quando reinicio, então nós, conexões e hierarquia são idênticos | FR-024, FR-029 | ET §2, §8 |
 
 ### 8.2. Modelo de arquitetura
@@ -403,7 +403,9 @@ Todas as ferramentas são da **fase 2**. Os esquemas completos de parâmetros n�
 | RN-15 | Arquivo externo inválido não é adotado | — | Último modelo válido mantido; aviso; escritas recusadas até corrigir ou restaurar |
 | RN-16 | Operação sobre `id` de nó ou conexão inexistente é recusada | `NOT_FOUND` | `update_node`, `move_node`, `remove_node`, `update_edge` e `remove_edge` com `id` inexistente devolvem o erro, com `path` no campo de entrada (ex.: `/id`); nada é gravado |
 
-Os dez códigos de erro estão cobertos: `SCHEMA_INVALID`, `DUPLICATE_ID`, `PARENT_NOT_FOUND`, `PARENT_CYCLE`, `EDGE_ENDPOINT_NOT_FOUND`, `EDGE_SELF_LOOP`, `EDGE_TO_ANCESTOR`, `LENS_INVALID`, `REVISION_CONFLICT` e `NOT_FOUND` (este último acrescentado nesta versão do PRD, RN-16).
+Os dez códigos de erro estão cobertos: `SCHEMA_INVALID`, `DUPLICATE_ID`, `PARENT_NOT_FOUND`, `PARENT_CYCLE`, `EDGE_ENDPOINT_NOT_FOUND`, `EDGE_SELF_LOOP`, `EDGE_TO_ANCESTOR`, `LENS_INVALID`, `REVISION_CONFLICT` e `NOT_FOUND` (este último acrescentado na versão 0.5 do PRD, RN-16).
+
+O servidor acrescenta dois **códigos de transporte**, que não pertencem à validação do modelo e por isso não têm RN: `MODEL_INVALID` (503, escrita recusada porque o arquivo do modelo está inválido) e `WRITE_FAILED` (500, falha ao gravar em disco; nada é alterado). Têm o mesmo formato de erro dos demais (ET §4).
 
 ## 11. Modelo de dados e arquivos
 
@@ -643,10 +645,9 @@ Sem datas nem estimativas. Detalhes de tarefas em [ROADMAP.md](ROADMAP.md).
 | DA-02 | Como o chat embutido funciona sem chamada direta a LLM | Viabilidade da fase 5 |
 | DA-04 | Como a ponte stdio descobre o servidor (porta) e o que faz se ele não estiver em execução | FR-034 |
 | DA-05 | Controles de segurança do endpoint local além do bind em `127.0.0.1` | NFR-013 |
-| DA-06 | Recuperação de modelo inválido por agente (ferramenta MCP de restauração) e comportamento na inicialização com arquivo inválido | FR-043, FR-044, J5 |
+| DA-06 | Recuperação de modelo inválido por agente (ferramenta MCP de restauração). O comportamento na inicialização com arquivo inválido já está decidido (ver decisões resolvidas) | FR-043, FR-044, J5 |
 | DA-07 | Comportamento do desfazer quando há alterações do agente intercaladas | FR-049 |
 | DA-08 | Critérios do layout automático (a fase 2 está confirmada) | Critérios de aceitação de FR-046 e FR-047; R-06 |
-| DA-09 | Criação automática de `docs/` e do modelo vazio | FR-002 |
 | DA-10 | Comportamento de `set_lens` para lente desconhecida | Seção 9 |
 | DA-11 | Política de migração entre valores de `schemaVersion`, incluindo arquivo mais novo que a ferramenta | Compatibilidade futura |
 | DA-12 | Metas de desempenho e limites de tamanho do modelo | NFR-015, NFR-016 |
@@ -659,6 +660,8 @@ Sem datas nem estimativas. Detalhes de tarefas em [ROADMAP.md](ROADMAP.md).
 | ID | Data | Decisão | Resumo |
 | --- | --- | --- | --- |
 | DA-03 | 2026-10-08 | Fluxo de escrita do arquivo de layout | O servidor grava `docs/architecture.layout.json` pela mesma fila, de forma atômica. Não incrementa `revision`, não gera `REVISION_CONFLICT` e vale a última escrita. Esquema próprio `{ schemaVersion, positions }`. `id` órfão é ignorado ao carregar e removido na próxima gravação. A interface grava ao soltar o nó. Arquivo ausente ou inválido equivale a "sem posições"; nós sem posição recebem grade até existir o layout por ELK |
+| DA-09 | 2026-10-08 | Criação automática de `docs/` e do modelo vazio | Em pasta sem modelo, o servidor inicia com um modelo vazio em memória (`meta.name` = nome da pasta). O arquivo e a pasta `docs/` só são criados na primeira escrita aceita |
+| DA-06 (parte) | 2026-10-08 | Modelo inválido na inicialização | O servidor sobe em estado `invalid`, expõe os erros nas leituras, recusa toda escrita no modelo (`MODEL_INVALID`, 503) e não sobrescreve o arquivo. A DA-06 continua aberta só para a restauração por agente via MCP |
 
 ## 19. Matriz de rastreabilidade
 
@@ -760,7 +763,7 @@ Nenhuma destas inconsistências foi resolvida por este PRD além de IN-01, em qu
 | Ferramentas MCP documentadas | 12 |
 | Jornadas | 10 |
 | Grupos de teste | 10 (T-01 a T-10), 3 deles propostos |
-| Riscos / dependências / decisões em aberto | 10 / 8 / 14 (mais 1 resolvida: DA-03) |
+| Riscos / dependências / decisões em aberto | 10 / 8 / 13 (mais 2 resolvidas: DA-03 e DA-09; a DA-06 está resolvida em parte) |
 | Inconsistências na especificação | 7 (IN-01 a IN-07); IN-01 e IN-03 resolvidas |
 
 **Decisões em aberto mais importantes**

@@ -47,19 +47,19 @@ Servidor local (`packages/server`)
 
 Interface (`packages/web`)
 
-- [ ] Canvas React Flow mostrando os filhos diretos do nível atual
-- [ ] Drill-down por duplo clique, trilha de navegação e nível na URL
-- [ ] Conexões entre níveis desenhadas no ancestral visível
-- [ ] Blocos com cor por `kind`, ícone, nome, linha de detalhe e contador de filhos
-- [ ] Catálogo inicial de 41 tecnologias com SVGs embutidos
-- [ ] Criar nó pela paleta e pelo menu de contexto; conectar arrastando
-- [ ] Painel lateral com árvore de nós e propriedades
-- [ ] Confirmação ao remover nó com cascata
-- [ ] Gravar posição ao soltar o nó, não durante o arrasto
-- [ ] Posicionamento em grade para nós sem posição
-- [ ] Abas `Diagrama` e `JSON` (somente leitura)
-- [ ] Desfazer na sessão da interface
-- [ ] Tema escuro como padrão
+- [x] Canvas React Flow mostrando os filhos diretos do nível atual
+- [x] Drill-down por duplo clique, trilha de navegação e nível na URL
+- [x] Conexões entre níveis desenhadas no ancestral visível
+- [x] Blocos com cor por `kind`, ícone, nome, linha de detalhe e contador de filhos
+- [ ] Catálogo inicial de 41 tecnologias com SVGs embutidos (40 de 41 prontos; `caddy` não existe no Devicon e usa o ícone do `kind`, DA-13)
+- [x] Criar nó pela paleta e pelo menu de contexto; conectar arrastando
+- [x] Painel lateral com árvore de nós e propriedades
+- [x] Confirmação ao remover nó com cascata
+- [x] Gravar posição ao soltar o nó, não durante o arrasto
+- [x] Posicionamento em grade para nós sem posição
+- [x] Abas `Diagrama` e `JSON` (somente leitura)
+- [x] Desfazer na sessão da interface
+- [x] Tema escuro como padrão
 
 CLI (`packages/cli`)
 
@@ -68,7 +68,7 @@ CLI (`packages/cli`)
 
 Verificação
 
-- [ ] Teste de ponta a ponta cobrindo o critério de aceite
+- [x] Teste de ponta a ponta cobrindo o critério de aceite (Playwright, contra o servidor; o `npx` depende da CLI)
 
 ## Fase 2 — Agentes
 
@@ -90,7 +90,7 @@ Verificação
 - [ ] Layout automático com ELK para nós sem posição e botão de reorganizar o nível
 - [ ] Texto de instrução para `CLAUDE.md` e `AGENTS.md`
 - [ ] Teste de concorrência: duas escritas com a mesma `expectedRevision` resultam em um aceite e um conflito
-- [ ] Teste de ponta a ponta cobrindo o critério de aceite
+- [x] Teste de ponta a ponta cobrindo o critério de aceite (Playwright, contra o servidor; o `npx` depende da CLI)
 
 ## Fase 3 — Dados
 
