@@ -128,12 +128,28 @@ describe("inverseOf", () => {
     });
   });
 
-  it("removeEdge is undone by addEdge with the same data; removeNode has no inverse", () => {
+  it("removeEdge is undone by addEdge with the same data", () => {
     expect(inverseOf({ type: "removeEdge", input: { id: "e_3" } }, model, {})).toEqual({
       type: "addEdge",
       input: { source: "n_api", target: "n_db", kind: "data" },
     });
-    expect(inverseOf({ type: "removeNode", input: { id: "n_api" } }, model, {})).toBe("clear");
+  });
+
+  it("removeNode is undone by restoreSubtree, carrying the saved positions of the removed nodes", () => {
+    const result = { removedNodes: [model.nodes[3], model.nodes[4]], removedEdges: [model.edges[3]] };
+    const inv = inverseOf({ type: "removeNode", input: { id: "n_api" } }, model, result, {
+      n_api: { x: 1, y: 2 },
+      n_nginx: { x: 9, y: 9 },
+    });
+    expect(inv).toEqual({
+      type: "restoreSubtree",
+      input: { nodes: result.removedNodes, edges: result.removedEdges },
+      positions: { n_api: { x: 1, y: 2 } },
+    });
+  });
+
+  it("operations without a known inverse clear the stack", () => {
+    expect(inverseOf({ type: "mystery", input: {} }, model, {})).toBe("clear");
   });
 });
 
