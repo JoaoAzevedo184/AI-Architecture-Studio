@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@arquitecture/core": ["../core/src/index.ts"],
+      "@arquitecture/server": ["../server/src/index.ts"]
+    }
+  },
+  "include": ["src", "test", "scripts", "vitest.config.ts", "vitest.package.config.ts"]
+}
