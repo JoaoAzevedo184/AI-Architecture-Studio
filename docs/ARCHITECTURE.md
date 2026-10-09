@@ -125,7 +125,7 @@ sequenceDiagram
 | Campo | Regra |
 | --- | --- |
 | `schemaVersion` | Inteiro. Muda só em quebra de formato; cada mudança vem com uma migração |
-| `revision` | Inteiro incrementado pelo servidor a cada escrita aceita |
+| `revision` | Inteiro incrementado pelo servidor a cada escrita aceita no modelo. Gravar o layout não incrementa a `revision` |
 | `nodes[].id` | Gerado pelo servidor, opaco e imutável |
 | `nodes[].kind` | `external`, `proxy`, `group`, `service`, `frontend`, `database`, `cache`, `queue`, `storage` |
 | `nodes[].tech` | Chave do catálogo de ícones; chave desconhecida cai no ícone do `kind` |
@@ -137,13 +137,40 @@ As posições dos nós ficam em `docs/architecture.layout.json`, indexadas por `
 
 **Conexão entre níveis.** Uma conexão pode ligar nós de pais diferentes. No nível em que o destino está recolhido, o canvas a desenha chegando no ancestral visível.
 
+## Layout
+
+As posições ficam em `docs/architecture.layout.json`, fora do modelo, para que mover uma caixa não polua o diff semântico (DA-03).
+
+- Gravado pelo servidor, pela mesma fila de escrita do modelo, com gravação atômica (arquivo temporário e renomeação).
+- Gravar o layout não incrementa a `revision` do modelo e nunca gera `REVISION_CONFLICT`.
+- Gravar o layout não publica nenhum evento: `model.changed` é publicado somente em escrita aceita no modelo. Cada aba da interface lê o layout ao carregar; sincronizar posições entre abas abertas ao mesmo tempo está fora do MVP.
+- Uma gravação de layout malformada é recusada com `SCHEMA_INVALID`, com `path` apontando para o elemento dentro do arquivo de layout e `message` e `hint` como nos demais erros. Nada é gravado.
+- Não há controle de conflito para o layout: vale a última escrita.
+- Esquema próprio e mínimo: `schemaVersion` e `positions`, um objeto `{ x, y }` por `id` de nó.
+- Posição de um `id` que não existe mais no modelo é ignorada ao carregar e removida na próxima gravação do layout. Remover um nó não exige gravar o layout na mesma operação.
+- A interface grava a posição ao soltar o nó, não durante o arrasto.
+- Arquivo ausente ou inválido não bloqueia nada: é tratado como "sem posições" e não coloca o modelo em estado inválido.
+- O arquivo de layout é lido somente na inicialização do servidor. O observador de arquivo acompanha apenas o modelo.
+- Uma edição externa do layout com o servidor em execução não é detectada e é sobrescrita na próxima gravação, porque vale a última escrita. Para aplicar um layout vindo de fora (por exemplo, após `git checkout`), reinicie a ferramenta.
+- Nós sem posição recebem layout automático. Enquanto o layout por ELK não existir (da fase 2), usa-se um posicionamento simples em grade.
+
+```json
+{
+  "schemaVersion": 1,
+  "positions": {
+    "n_nginx": { "x": 120, "y": 80 },
+    "n_docker": { "x": 420, "y": 80 }
+  }
+}
+```
+
 ## Validação
 
 Duas camadas: forma (JSON Schema) e integridade (regras entre elementos). O modelo resultante é validado por inteiro antes de qualquer gravação.
 
 | Código | Regra |
 | --- | --- |
-| `SCHEMA_INVALID` | O documento não obedece ao JSON Schema da `schemaVersion` |
+| `SCHEMA_INVALID` | O documento não obedece ao JSON Schema da `schemaVersion`. Também cobre o arquivo de layout: gravação de layout malformada é recusada com este código e `path` dentro do arquivo de layout |
 | `DUPLICATE_ID` | Dois nós ou duas conexões com o mesmo `id` |
 | `PARENT_NOT_FOUND` | `parent` aponta para nó inexistente |
 | `PARENT_CYCLE` | Um nó é ancestral de si mesmo |
@@ -178,14 +205,14 @@ O adaptador roda dentro do servidor e é exposto por HTTP em `127.0.0.1`. Para a
 
 **Concorrência.** Toda escrita aceita `expectedRevision`. Sem ela, a operação é aplicada sobre o estado atual. Com valor diferente do atual, a resposta é `REVISION_CONFLICT`.
 
-**Eventos.** `model.changed`, `model.invalid` e `model.restored`, publicados por WebSocket.
+**Eventos.** `model.changed`, `model.invalid` e `model.restored`, publicados por WebSocket. `model.changed` é publicado somente em escrita aceita no modelo; gravar o layout não publica evento.
 
 ## Interface
 
 - Painel lateral à esquerda (árvore de nós e propriedades), canvas à direita, abas no topo.
 - Cada nível da hierarquia é uma tela com os filhos diretos do nó atual.
 - Duplo clique entra em um nó; a trilha volta; o nível fica na URL (`#/n_docker/n_api`).
-- Posição manual é persistida; nós sem posição recebem layout automático por ELK.
+- Posição manual é persistida. Na fase 1, nós sem posição recebem posicionamento simples em grade; a partir da fase 2, recebem layout automático por ELK.
 - Ícones do Devicon embutidos no pacote, sem requisição externa.
 - Desfazer é local à sessão da interface e não desfaz alterações do agente.
 
@@ -212,7 +239,6 @@ interface Lens {
 
 Estes pontos afetam a implementação e estão registrados como decisões em aberto no PRD:
 
-- Fluxo de escrita e revisão do arquivo de layout.
 - Como a ponte stdio descobre o servidor e o que faz se ele não estiver em execução.
 - Proteção do endpoint HTTP local além de escutar só em `127.0.0.1`.
 - Política de migração entre valores de `schemaVersion`.

@@ -42,7 +42,7 @@ Um único processo Node local é o dono do arquivo: interface e agente nunca gra
 1. O cliente (interface ou agente) envia uma operação com a `revision` que conhece.
 2. O servidor confere a revisão, aplica a operação em memória e valida o modelo inteiro.
 3. Se válido, grava em arquivo temporário e renomeia sobre `architecture.json`.
-4. Incrementa `revision` e publica o evento `model.changed` por WebSocket.
+4. Incrementa `revision` e publica o evento `model.changed` por WebSocket. Esse evento é publicado somente em escrita aceita no modelo; gravar o layout não publica evento.
 5. Se inválido, nada é gravado e o cliente recebe um erro estruturado.
 
 **Transporte MCP.** O adaptador roda dentro do servidor local e é exposto por HTTP em `127.0.0.1`. Para agentes que só aceitam stdio, o comando `arquitecture mcp` é uma ponte fina que repassa as chamadas ao servidor em execução. Assim existe um único escritor mesmo com interface e agente abertos ao mesmo tempo.
@@ -77,7 +77,7 @@ O modelo é uma lista plana de nós e uma lista plana de conexões; a hierarquia
 | Campo | Regra |
 | --- | --- |
 | `schemaVersion` | Inteiro. Muda só em quebra de formato; cada mudança vem com uma migração |
-| `revision` | Inteiro incrementado pelo servidor a cada escrita aceita |
+| `revision` | Inteiro incrementado pelo servidor a cada escrita aceita no modelo. Gravar o layout não incrementa a `revision` |
 | `nodes[].id` | Gerado pelo servidor, opaco e imutável. Nunca derivado do nome, então renomear não quebra conexões |
 | `nodes[].kind` | Conjunto fechado: `external`, `proxy`, `group`, `service`, `frontend`, `database`, `cache`, `queue`, `storage` |
 | `nodes[].tech` | Chave do catálogo de ícones. Chave desconhecida é aceita e cai no ícone do `kind` |
@@ -94,7 +94,7 @@ Nenhuma escrita chega ao disco sem passar pela validação completa do modelo re
 
 | Código | Regra |
 | --- | --- |
-| `SCHEMA_INVALID` | O documento não obedece ao JSON Schema da `schemaVersion` |
+| `SCHEMA_INVALID` | O documento não obedece ao JSON Schema da `schemaVersion`. Também cobre o arquivo de layout: gravação de layout malformada é recusada com este código e `path` dentro do arquivo de layout |
 | `DUPLICATE_ID` | Dois nós ou duas conexões com o mesmo `id` |
 | `PARENT_NOT_FOUND` | `parent` aponta para nó inexistente |
 | `PARENT_CYCLE` | Um nó é ancestral de si mesmo |
@@ -132,7 +132,7 @@ Interface e agente usam o mesmo conjunto de operações do núcleo; as ferrament
 
 **`apply_batch` é o caminho principal do agente.** Montar uma arquitetura inteira operação por operação gera dezenas de chamadas e estados intermediários no canvas. Um lote produz uma única revisão e um único evento.
 
-**Eventos para a interface.** `model.changed` (revisão e operações aplicadas), `model.invalid` (erros de uma edição externa) e `model.restored`.
+**Eventos para a interface.** `model.changed` (revisão e operações aplicadas; publicado somente em escrita aceita no modelo, nunca na gravação do layout), `model.invalid` (erros de uma edição externa) e `model.restored`.
 
 ## 6. Interface
 
@@ -143,7 +143,7 @@ O layout segue o database.build: painel lateral à esquerda, canvas à direita, 
 - **Blocos.** Estilo Archify: caixa com borda na cor do `kind`, ícone da tecnologia, nome e uma linha de detalhe. Nós com filhos mostram um contador.
 - **Ícones.** Catálogo local mapeando `tech` para um SVG do Devicon. Os SVGs vão embutidos no pacote, sem requisição externa.
 - **Edição manual.** Criar nó pela paleta ou menu de contexto, arrastar para conectar, editar propriedades no painel, apagar com confirmação quando houver cascata.
-- **Layout.** Posição manual é salva em `layout`. Nós sem posição (criados pelo agente) recebem layout automático por ELK, e um botão reorganiza o nível inteiro.
+- **Layout.** Posição manual é salva em `docs/architecture.layout.json` (ver seção 9). Na fase 1, nós sem posição recebem posicionamento simples em grade. A partir da fase 2, nós sem posição (criados pelo agente) recebem layout automático por ELK, e um botão reorganiza o nível inteiro.
 - **Abas.** `Diagrama` e `JSON` (somente leitura) no MVP; cada lente registrada adiciona a própria aba ou alternador.
 - **Desfazer.** Pilha de operações inversas na sessão da interface. Não desfaz alterações do agente.
 
@@ -203,9 +203,34 @@ Cada fase termina em algo que dá para demonstrar sozinho.
 | Pacote e comando | `arquitecture` (`npx arquitecture`, `arquitecture mcp`). Falta conferir se o nome está livre no npm |
 | Linguagem | TypeScript em todo o monorepo |
 | Local do modelo | `docs/architecture.json` |
-| Layout | Arquivo separado, `docs/architecture.layout.json`, com as posições por `id` |
+| Layout | Arquivo separado, `docs/architecture.layout.json`, com as posições por `id`. Gravado pelo servidor na mesma fila, de forma atômica, sem incrementar `revision` e sem controle de conflito (vale a última escrita); esquema próprio mínimo; `id` órfão descartado; arquivo ausente ou inválido equivale a "sem posições" |
 | Identidade visual | Paleta por `kind`, tema escuro como padrão |
 | Catálogo de ícones | Lista inicial abaixo |
+
+**Gravação do layout**
+
+- Gravado pelo servidor, pela mesma fila de escrita do modelo, com gravação atômica (arquivo temporário e renomeação).
+- Gravar o layout não incrementa a `revision` do modelo e nunca gera `REVISION_CONFLICT`.
+- Gravar o layout não publica nenhum evento: `model.changed` é publicado somente em escrita aceita no modelo. Cada aba da interface lê o layout ao carregar; sincronizar posições entre abas abertas ao mesmo tempo está fora do MVP.
+- Uma gravação de layout malformada é recusada com `SCHEMA_INVALID`, com `path` apontando para o elemento dentro do arquivo de layout e `message` e `hint` como nos demais erros. Nada é gravado.
+- Não há controle de conflito para o layout: vale a última escrita.
+- Esquema próprio e mínimo: `schemaVersion` e `positions`, um objeto `{ x, y }` por `id` de nó.
+- Posição de um `id` que não existe mais no modelo é ignorada ao carregar e removida na próxima gravação do layout. Remover um nó não exige gravar o layout na mesma operação.
+- A interface grava a posição ao soltar o nó, não durante o arrasto.
+- Arquivo ausente ou inválido não bloqueia nada: é tratado como "sem posições" e não coloca o modelo em estado inválido.
+- O arquivo de layout é lido somente na inicialização do servidor. O observador de arquivo acompanha apenas o modelo.
+- Uma edição externa do layout com o servidor em execução não é detectada e é sobrescrita na próxima gravação, porque vale a última escrita. Para aplicar um layout vindo de fora (por exemplo, após `git checkout`), reinicie a ferramenta.
+- Nós sem posição recebem layout automático. Enquanto o layout por ELK não existir (da fase 2), usa-se um posicionamento simples em grade.
+
+```json
+{
+  "schemaVersion": 1,
+  "positions": {
+    "n_nginx": { "x": 120, "y": 80 },
+    "n_docker": { "x": 420, "y": 80 }
+  }
+}
+```
 
 **Catálogo inicial de `tech`**
 

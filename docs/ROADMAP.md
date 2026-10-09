@@ -36,8 +36,14 @@ Servidor local (`packages/server`)
 - [ ] Fila única de escrita
 - [ ] Gravação atômica (arquivo temporário e renomeação)
 - [ ] Incremento de `revision` e resposta `REVISION_CONFLICT`
-- [ ] Leitura e gravação de `docs/architecture.layout.json`
+- [ ] Leitura e gravação de `docs/architecture.layout.json` (DA-03)
+  - [ ] Gravação pela mesma fila, de forma atômica
+  - [ ] Sem incremento de `revision` e sem `REVISION_CONFLICT`; vale a última escrita
+  - [ ] Posição de `id` órfão ignorada ao carregar e descartada na próxima gravação
+  - [ ] Arquivo ausente ou inválido tratado como "sem posições", sem bloquear escritas
 - [ ] API HTTP para a interface, escutando em `127.0.0.1`
+ - [ ] Recusar gravação de layout malformada com `SCHEMA_INVALID`
+
 
 Interface (`packages/web`)
 
@@ -49,6 +55,8 @@ Interface (`packages/web`)
 - [ ] Criar nó pela paleta e pelo menu de contexto; conectar arrastando
 - [ ] Painel lateral com árvore de nós e propriedades
 - [ ] Confirmação ao remover nó com cascata
+- [ ] Gravar posição ao soltar o nó, não durante o arrasto
+- [ ] Posicionamento em grade para nós sem posição
 - [ ] Abas `Diagrama` e `JSON` (somente leitura)
 - [ ] Desfazer na sessão da interface
 - [ ] Tema escuro como padrão

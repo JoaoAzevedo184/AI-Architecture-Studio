@@ -7,7 +7,7 @@
 | Produto | AI Architecture Studio |
 | Tipo | Product Requirements Document |
 | Finalidade | Referência de produto para orientar o desenvolvimento com Claude Code e OpenAI Codex |
-| Versão | 0.1 |
+| Versão | 0.4 |
 | Data | 2026-10-08 |
 | Status | Rascunho, não aprovado |
 | Documento de origem | AI Architecture Studio — Especificação Técnica (citada como **ET §n**) |
@@ -129,10 +129,11 @@ P4 depende de funcionalidades posteriores ao MVP.
 - Chamada direta a LLM pela ferramenta.
 - Inspeção de infraestrutura em execução.
 - Carregamento de plugins de lentes de terceiros (ET §7).
+- Sincronização de posições entre abas da interface abertas ao mesmo tempo: cada aba lê o layout ao carregar.
 
 ### 6.4. Limites do produto
 
-O produto representa a arquitetura **declarada** no modelo. Ele não garante que o modelo corresponde ao código, à infraestrutura implantada ou ao que está em execução. A correspondência depende de quem preenche o modelo, seja a pessoa ou o agente. A lente de segurança, quando existir, mostra o que foi declarado e não constitui auditoria.
+O produto representa a arquitetura **declarada** no modelo. Ele não garante que o modelo corresponde ao código, à infraestrutura implantada ou ao que está em execução. A correspondência depende de quem preenche o modelo, seja a pessoa ou o agente. A lente de segurança, quando existir, mostra o que foi declarado e não constitui auditoria. O arquivo de layout é lido só na inicialização: uma edição externa dele com a ferramenta em execução não é detectada e é sobrescrita na próxima gravação, então aplicar um layout vindo de fora exige reiniciar a ferramenta.
 
 ## 7. Jornadas e casos de uso
 
@@ -175,9 +176,9 @@ O produto representa a arquitetura **declarada** no modelo. Ele não garante que
 
 - **Ator:** dev (P2).
 - **Fluxo:** encerra o processo; executa `npx arquitecture` de novo.
-- **Resultado:** mesmos nós, conexões, hierarquia e posições.
-- **Erros possíveis:** arquivo alterado e inválido no intervalo.
-- **Recuperação:** comportamento na inicialização com arquivo inválido não está definido (DA-06). Em execução, vale J9.
+- **Resultado:** mesmos nós, conexões, hierarquia e posições. Posições de nós que não existem mais são ignoradas.
+- **Erros possíveis:** arquivo do modelo alterado e inválido no intervalo; arquivo de layout ausente ou inválido.
+- **Recuperação:** comportamento na inicialização com arquivo do modelo inválido não está definido (DA-06). Em execução, vale J9. Layout ausente ou inválido não bloqueia: é tratado como "sem posições" e os nós recebem posicionamento automático (DA-03, resolvida).
 
 ### J6. Solicitar a um agente o mapeamento de um repositório
 
@@ -191,7 +192,7 @@ O produto representa a arquitetura **declarada** no modelo. Ele não garante que
 ### J7. Observar atualizações do agente sem recarregar a interface
 
 - **Ator:** dev (P3).
-- **Fluxo:** com o canvas aberto, o agente aplica operações; o servidor publica `model.changed`; o canvas redesenha; nós sem posição recebem layout automático.
+- **Fluxo:** com o canvas aberto, o agente aplica operações; o servidor publica `model.changed`; o canvas redesenha; nós sem posição recebem layout automático, por ELK, entregue na fase 2.
 - **Resultado:** o diagrama aparece sem ação da pessoa.
 - **Erros possíveis:** conexão WebSocket perdida.
 - **Recuperação:** não definida na especificação. **Proposto:** reconectar e reler o modelo.
@@ -279,7 +280,7 @@ Os requisitos das fases 3 a 5 estão descritos na seção 14 e não recebem iden
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | FR-024 | Arquivo do modelo | O modelo é persistido em `docs/architecture.json` | Fonte da verdade versionada | Sistema | P0 | 1 | Após uma operação aceita, o arquivo contém o novo estado | — | ET §1, §9 |
 | FR-025 | Escrita atômica | A gravação usa arquivo temporário e renomeação | Nunca deixar o arquivo pela metade | Sistema | P0 | 1 | Interromper o processo durante a gravação não deixa o arquivo corrompido | FR-024 | ET §2 |
-| FR-026 | Revisão | `revision` é incrementada pelo servidor a cada escrita aceita | Detectar conflitos | Sistema | P0 | 1 | Cada escrita aceita aumenta `revision` em 1; escrita recusada não altera | FR-024 | ET §2, §3 |
+| FR-026 | Revisão | `revision` é incrementada pelo servidor a cada escrita aceita no modelo. Gravar o layout não incrementa a `revision` | Detectar conflitos | Sistema | P0 | 1 | Cada escrita aceita no modelo aumenta `revision` em 1; escrita recusada não altera | FR-024 | ET §2, §3 |
 | FR-027 | Escritor único | Todas as escritas passam por uma fila única no servidor | Concorrência sem trava de arquivo | Sistema | P0 | 1 | Duas operações enviadas ao mesmo tempo são aplicadas uma após a outra | — | ET §2 |
 | FR-028 | Serialização estável | Carregar e gravar um modelo sem alterações produz o mesmo conteúdo, com ordem de chaves estável | Diff do Git limpo | Sistema | P1 | 1 | O teste de ida e volta passa | FR-024 | ET §8 |
 
@@ -287,7 +288,7 @@ Os requisitos das fases 3 a 5 estão descritos na seção 14 e não recebem iden
 
 | ID | Nome | Descrição | Justificativa | Ator | Prio | Fase | Critérios de aceitação | Dependências | Origem |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| FR-029 | Validação antes de gravar | Toda escrita valida o modelo resultante inteiro (JSON Schema e regras de integridade) antes de chegar ao disco | Integridade do modelo | Sistema | P0 | 1 | Operação que viola qualquer regra da seção 10 não altera o arquivo nem a `revision` | — | ET §4 |
+| FR-029 | Validação antes de gravar | Toda escrita no modelo valida o modelo resultante inteiro (JSON Schema e regras de integridade) antes de chegar ao disco. Na gravação do layout, valida-se apenas a forma do arquivo de layout; gravação malformada é recusada com `SCHEMA_INVALID`, `path` dentro do arquivo de layout, `message` e `hint`, e nada é gravado | Integridade do modelo | Sistema | P0 | 1 | Operação que viola qualquer regra da seção 10 não altera o arquivo nem a `revision` | — | ET §4 |
 | FR-030 | Erro estruturado | Todo erro traz `code`, `message`, `path` e `hint` | Pessoa e agente conseguem se corrigir | Sistema | P0 | 1 | Cada código da seção 10 é devolvido com os quatro campos | FR-029 | ET §4 |
 | FR-031 | Exclusão em cascata | Remover um nó remove os descendentes e as conexões que tocam neles; a resposta lista o que foi removido | Não deixar referências órfãs | Dev, agente | P0 | 1 | Dado Docker com três filhos e duas conexões, quando removo Docker, então a resposta lista os quatro nós e as conexões removidas | FR-029 | ET §4 |
 
@@ -312,8 +313,8 @@ Os requisitos das fases 3 a 5 estão descritos na seção 14 e não recebem iden
 
 | ID | Nome | Descrição | Justificativa | Ator | Prio | Fase | Critérios de aceitação | Dependências | Origem |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| FR-039 | Atualização ao vivo | A cada escrita aceita, o servidor publica `model.changed` por WebSocket e o canvas se atualiza sem recarregar | Ver o agente trabalhar | Dev | P0 | 2 | Dado o canvas aberto, quando o agente cria um nó, então o nó aparece sem recarregar a página | FR-032 | ET §2, §5 |
-| FR-040 | Interface envia a revisão | A interface envia sempre a `revision` que conhece em cada escrita | Detectar que o agente alterou o modelo | Interface | P0 | 1 | Uma edição manual sobre revisão antiga recebe `REVISION_CONFLICT` | FR-026 | ET §5 |
+| FR-039 | Atualização ao vivo | A cada escrita aceita no modelo, o servidor publica `model.changed` por WebSocket e o canvas se atualiza sem recarregar. Gravar o layout não publica evento | Ver o agente trabalhar | Dev | P0 | 2 | Dado o canvas aberto, quando o agente cria um nó, então o nó aparece sem recarregar a página | FR-032 | ET §2, §5 |
+| FR-040 | Interface envia a revisão | A interface envia sempre a `revision` que conhece em toda escrita no modelo. A gravação do layout não envia nem confere `revision` | Detectar que o agente alterou o modelo | Interface | P0 | 1 | Uma edição manual sobre revisão antiga recebe `REVISION_CONFLICT` | FR-026 | ET §5 |
 
 ### 8.11. Tratamento de alterações externas
 
@@ -328,9 +329,9 @@ Os requisitos das fases 3 a 5 estão descritos na seção 14 e não recebem iden
 
 | ID | Nome | Descrição | Justificativa | Ator | Prio | Fase | Critérios de aceitação | Dependências | Origem |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| FR-045 | Posição manual persistida | A posição definida ao arrastar é salva em `docs/architecture.layout.json`, por `id` | Reabrir com o mesmo desenho | Dev | P0 | 1 | Mover um nó, fechar e reabrir mantém a posição. O fluxo de escrita desse arquivo está em aberto (DA-03) | FR-006 | ET §6, §9 |
-| FR-046 | Layout automático | Nós sem posição recebem layout automático por ELK | Nós criados pelo agente não têm posição | Sistema | P0 | 2 (Proposto) | Nós criados por `apply_batch` aparecem sem sobreposição. A especificação não fixa a fase nem os critérios (DA-08) | FR-045 | ET §6 |
-| FR-047 | Reorganizar nível | Um botão reorganiza automaticamente o nível atual | Arrumar um nível bagunçado | Dev | P1 | 2 (Proposto) | Acionar o botão recalcula as posições do nível atual | FR-046 | ET §6 |
+| FR-045 | Posição manual persistida | A interface envia a posição ao soltar o nó (não durante o arrasto) e o servidor a grava em `docs/architecture.layout.json`, por `id`, pela mesma fila de escrita e de forma atômica. Gravar o layout não incrementa `revision`, não gera `REVISION_CONFLICT` e não tem controle de conflito: vale a última escrita | Reabrir com o mesmo desenho | Dev | P0 | 1 | Mover um nó, fechar e reabrir mantém a posição. Mover um nó não altera a `revision` do modelo. Posição de `id` inexistente no modelo é ignorada ao carregar e removida na próxima gravação do layout. Layout ausente ou inválido não bloqueia escritas nem invalida o modelo: os nós recebem posicionamento em grade enquanto FR-046 não existir. O layout é lido só na inicialização; o observador acompanha apenas o modelo; edição externa do layout com o servidor em execução não é detectada e é sobrescrita na próxima gravação. Para aplicar um layout vindo de fora (por exemplo, após `git checkout`), reinicia-se a ferramenta. Gravar o layout não publica evento. Gravação de layout malformada é recusada com `SCHEMA_INVALID`, `path` dentro do arquivo de layout, e nada é gravado | FR-006 | ET §6, §9; DA-03 |
+| FR-046 | Layout automático | Nós sem posição recebem layout automático por ELK | Nós criados pelo agente não têm posição | Sistema | P0 | 2 | Nós criados por `apply_batch` aparecem sem sobreposição. Os critérios ainda não estão definidos (DA-08) | FR-045 | ET §6 |
+| FR-047 | Reorganizar nível | Um botão reorganiza automaticamente o nível atual | Arrumar um nível bagunçado | Dev | P1 | 2 | Acionar o botão recalcula as posições do nível atual | FR-046 | ET §6 |
 
 ### 8.13. Visualização do JSON
 
@@ -375,7 +376,7 @@ Todas as ferramentas são da **fase 2**. Os esquemas completos de parâmetros n�
 
 | Evento | Quando | Conteúdo conhecido |
 | --- | --- | --- |
-| `model.changed` | Escrita aceita | Revisão e operações aplicadas |
+| `model.changed` | Escrita aceita no modelo. Gravar o layout não publica evento | Revisão e operações aplicadas |
 | `model.invalid` | Edição externa inválida | Erros |
 | `model.restored` | Restauração do último modelo válido | Não detalhado |
 
@@ -392,11 +393,11 @@ Todas as ferramentas são da **fase 2**. Os esquemas completos de parâmetros n�
 | RN-05 | Os extremos de uma conexão precisam existir | `EDGE_ENDPOINT_NOT_FOUND` | Conexão para nó inexistente é recusada |
 | RN-06 | Conexão de um nó para si mesmo é proibida | `EDGE_SELF_LOOP` | Recusada |
 | RN-07 | Conexão entre um nó e o próprio ancestral é proibida | `EDGE_TO_ANCESTOR` | Recusada |
-| RN-08 | O documento obedece ao JSON Schema da `schemaVersion` | `SCHEMA_INVALID` | Campo ausente ou valor fora do conjunto é recusado |
+| RN-08 | O documento obedece ao JSON Schema da `schemaVersion` | `SCHEMA_INVALID` | Campo ausente ou valor fora do conjunto é recusado. O código também cobre o arquivo de layout: gravação malformada é recusada com `path` dentro dele |
 | RN-09 | O trecho de uma lente conhecida obedece ao esquema da lente | `LENS_INVALID` | `set_lens` com dado inválido é recusado |
 | RN-10 | Lente desconhecida é preservada sem validação | — | O trecho sobrevive a carregar e gravar |
 | RN-11 | Remoção de nó é em cascata | — | Descendentes e conexões relacionadas saem juntos; a resposta lista o que saiu |
-| RN-12 | `revision` incrementa a cada escrita aceita | — | Escrita recusada não altera a revisão |
+| RN-12 | `revision` incrementa a cada escrita aceita no modelo | — | Escrita recusada não altera a revisão |
 | RN-13 | A gravação é atômica | — | O arquivo nunca fica parcialmente escrito |
 | RN-14 | Operação sobre revisão antiga é recusada | `REVISION_CONFLICT` | A resposta traz a revisão corrente |
 | RN-15 | Arquivo externo inválido não é adotado | — | Último modelo válido mantido; aviso; escritas recusadas até corrigir ou restaurar |
@@ -408,7 +409,7 @@ Os nove códigos de erro da especificação estão cobertos: `SCHEMA_INVALID`, `
 | Arquivo | Papel |
 | --- | --- |
 | `docs/architecture.json` | Modelo canônico: nós, conexões, hierarquia e metadados de lentes |
-| `docs/architecture.layout.json` | Posições dos nós, por `id` |
+| `docs/architecture.layout.json` | Posições dos nós, por `id`. Esquema próprio: `{ "schemaVersion": 1, "positions": { "<id do nó>": { "x": 0, "y": 0 } } }`. Fora da `revision` do modelo; ausente ou inválido equivale a "sem posições" (DA-03) |
 | `CLAUDE.md` / `AGENTS.md` | Arquivos do próprio projeto onde fica a instrução para o agente usar MCP |
 
 A especificação não define nenhum outro arquivo de configuração.
@@ -416,7 +417,7 @@ A especificação não define nenhum outro arquivo de configuração.
 | Conceito | Significado |
 | --- | --- |
 | `schemaVersion` | Versão do formato. Muda só em quebra de formato; cada mudança vem com uma migração |
-| `revision` | Contador de escritas aceitas, mantido pelo servidor |
+| `revision` | Contador de escritas aceitas no modelo, mantido pelo servidor |
 | `meta` | Dados do projeto: `name`, `description` |
 | `nodes` | Lista plana de componentes |
 | `edges` | Lista plana de conexões entre nós |
@@ -446,7 +447,6 @@ O JSON Schema completo pertence à especificação técnica, que é o documento 
 
 **Dúvidas sobre os arquivos**
 
-- O formato interno de `docs/architecture.layout.json` foi exemplificado apenas como posições `x` e `y` por `id`. Não está definido se ele tem `schemaVersion` próprio, nem como trata `id` que não existe mais no modelo (DA-03).
 - Não está definido o que a ferramenta faz ao abrir um arquivo com `schemaVersion` maior que a suportada (DA-11).
 
 ## 12. Requisitos não funcionais
@@ -486,7 +486,7 @@ O JSON Schema completo pertence à especificação técnica, que é o documento 
 | Navegação hierárquica | Duplo clique entra; trilha volta | ET §6 |
 | URL | Reflete o nível atual (`#/n_docker/n_api`) | ET §6 |
 | Ícones | Devicon embutido, escolhido por `tech`; ícone do `kind` quando não há correspondência | ET §6 |
-| Layout | Manual persistido; automático por ELK para nós sem posição; botão de reorganizar o nível | ET §6 |
+| Layout | Manual persistido; nós sem posição em grade na fase 1 e com layout automático por ELK a partir da fase 2; botão de reorganizar o nível | ET §6 |
 | Aba `Diagrama` | Visão padrão | ET §6 |
 | Aba `JSON` | Modelo atual, somente leitura | ET §6 |
 | Aviso de modelo inválido | Mostra os erros de uma edição externa inválida, com a ação "restaurar último válido" | ET §4 |
@@ -640,12 +640,11 @@ Sem datas nem estimativas. Detalhes de tarefas em [ROADMAP.md](ROADMAP.md).
 | --- | --- | --- |
 | DA-01 | Confirmar a grafia `arquitecture` e a disponibilidade no npm | Nome do comando em toda a documentação |
 | DA-02 | Como o chat embutido funciona sem chamada direta a LLM | Viabilidade da fase 5 |
-| DA-03 | Fluxo de escrita do arquivo de layout: passa pela fila, incrementa `revision`, tem esquema próprio, como trata `id` órfão | FR-045, eventos e conflitos |
 | DA-04 | Como a ponte stdio descobre o servidor (porta) e o que faz se ele não estiver em execução | FR-034 |
 | DA-05 | Controles de segurança do endpoint local além do bind em `127.0.0.1` | NFR-013 |
 | DA-06 | Recuperação de modelo inválido por agente (ferramenta MCP de restauração) e comportamento na inicialização com arquivo inválido | FR-043, FR-044, J5 |
 | DA-07 | Comportamento do desfazer quando há alterações do agente intercaladas | FR-049 |
-| DA-08 | Fase e critérios do layout automático | FR-046, FR-047 |
+| DA-08 | Critérios do layout automático (a fase 2 está confirmada) | Critérios de aceitação de FR-046 e FR-047; R-06 |
 | DA-09 | Criação automática de `docs/` e do modelo vazio | FR-002 |
 | DA-10 | Comportamento de `set_lens` para lente desconhecida | Seção 9 |
 | DA-11 | Política de migração entre valores de `schemaVersion`, incluindo arquivo mais novo que a ferramenta | Compatibilidade futura |
@@ -653,6 +652,12 @@ Sem datas nem estimativas. Detalhes de tarefas em [ROADMAP.md](ROADMAP.md).
 | DA-13 | Correspondência entre as 41 chaves de `tech` e os nomes de ícone do Devicon | FR-023 |
 | DA-14 | Mapeamento da hierarquia e das lentes nas exportações | Fase 5 |
 | DA-15 | Formato do alias em `apply_batch` e esquemas completos dos parâmetros das ferramentas | FR-038, seção 9 |
+
+### Decisões resolvidas
+
+| ID | Data | Decisão | Resumo |
+| --- | --- | --- | --- |
+| DA-03 | 2026-10-08 | Fluxo de escrita do arquivo de layout | O servidor grava `docs/architecture.layout.json` pela mesma fila, de forma atômica. Não incrementa `revision`, não gera `REVISION_CONFLICT` e vale a última escrita. Esquema próprio `{ schemaVersion, positions }`. `id` órfão é ignorado ao carregar e removido na próxima gravação. A interface grava ao soltar o nó. Arquivo ausente ou inválido equivale a "sem posições"; nós sem posição recebem grade até existir o layout por ELK |
 
 ## 19. Matriz de rastreabilidade
 
@@ -683,7 +688,7 @@ Sem datas nem estimativas. Detalhes de tarefas em [ROADMAP.md](ROADMAP.md).
 | FR-023 | ET §9 | 1 | 41 chaves resolvem | T-10 |
 | FR-024 | ET §1, §9 | 1 | Arquivo reflete o estado | T-04 |
 | FR-025 | ET §2 | 1 | Interrupção não corrompe | Não definido |
-| FR-026 | ET §2, §3 | 1 | `revision` + 1 por escrita aceita | T-05 |
+| FR-026 | ET §2, §3 | 1 | `revision` + 1 por escrita aceita no modelo | T-05 |
 | FR-027 | ET §2 | 1 | Escritas serializadas | T-05 |
 | FR-028 | ET §8 | 1 | Ida e volta idêntica | T-04 |
 | FR-029 | ET §4 | 1 | Operação inválida não grava | T-02, T-03 |
@@ -703,8 +708,8 @@ Sem datas nem estimativas. Detalhes de tarefas em [ROADMAP.md](ROADMAP.md).
 | FR-043 | ET §4, §8 | 2 | Aviso; interface de pé; escritas recusadas | T-08 |
 | FR-044 | ET §4, §5 | 2 | Restauração libera escritas | T-08 |
 | FR-045 | ET §6, §9 | 1 | Posição mantida ao reabrir | T-10 |
-| FR-046 | ET §6 | 2 (Proposto) | Nós sem sobreposição | T-10 |
-| FR-047 | ET §6 | 2 (Proposto) | Nível reorganizado | T-10 |
+| FR-046 | ET §6 | 2 | Nós sem sobreposição | T-10 |
+| FR-047 | ET §6 | 2 | Nível reorganizado | T-10 |
 | FR-048 | ET §6 | 1 | JSON visível e não editável | T-10 |
 | FR-049 | ET §6 | 1 | Desfazer reverte edição manual | T-10 |
 
@@ -721,7 +726,7 @@ FR-025 não tem teste definido na especificação. **Proposto:** um teste que in
 | Drill-down | Entrar em um nó para ver o subdiagrama com os filhos dele |
 | Lente | Visão especializada sobre o mesmo modelo, com metadados próprios no nó |
 | MCP | Model Context Protocol, protocolo pelo qual agentes chamam ferramentas externas |
-| Revisão | Contador `revision`, incrementado a cada escrita aceita |
+| Revisão | Contador `revision`, incrementado a cada escrita aceita no modelo |
 | Escrita atômica | Gravação que termina por inteiro ou não acontece, feita com arquivo temporário e renomeação |
 | Conflito de revisão | Recusa de uma operação feita sobre uma revisão antiga (`REVISION_CONFLICT`) |
 | JSON Schema | Formato de descrição da estrutura esperada de um documento JSON, usado na validação de forma |
@@ -735,13 +740,13 @@ FR-025 não tem teste definido na especificação. **Proposto:** um teste que in
 | --- | --- | --- | --- |
 | IN-01 | ET §1 a §8 contra ET §9 | As seções 1 a 8 citam `architecture.json` sem pasta; a seção 9 fixa `docs/architecture.json` | Atualizar as referências antigas. Este PRD adota a seção 9 |
 | IN-02 | ET §1 "fora de escopo" contra ET §1 e §8 "chat embutido" | A ferramenta não chama LLM, mas prevê um chat embutido na fase 5 | Definir como o chat se liga ao agente externo (DA-02) |
-| IN-03 | ET §2 e §6 contra ET §9 | O fluxo de escrita só trata `architecture.json`; a seção 6 diz que a posição é salva em `layout`; a seção 9 move o layout para arquivo próprio sem definir seu fluxo | Especificar a escrita do layout (DA-03) |
+| IN-03 | ET §2 e §6 contra ET §9 | O fluxo de escrita só trata `architecture.json`; a seção 6 diz que a posição é salva em `layout`; a seção 9 move o layout para arquivo próprio sem definir seu fluxo | Resolvida pela DA-03 (2026-10-08) |
 | IN-04 | ET §4 contra ET §5 | O estado inválido só sai por correção do arquivo ou pelo botão da interface; existe o evento `model.restored`, mas nenhuma ferramenta MCP de restauração | Decidir se o agente pode restaurar (DA-06) |
 | IN-05 | ET §2 contra ET §8 | O passo 4 do fluxo de escrita publica por WebSocket, mas o WebSocket é entrega da fase 2 | Esclarecer que na fase 1 a interface se atualiza pela resposta HTTP |
 | IN-06 | Título contra ET §9 | O produto se chama "AI Architecture Studio" e o comando é `arquitecture`, grafia que não é inglês nem português | Confirmar o nome (DA-01) |
 | IN-07 | ET §3 contra ET §7 | A lente de segurança define metadados na conexão, mas o modelo só prevê `lenses` no nó | Definir onde ficam os metadados de lente das conexões antes da fase 4 |
 
-Nenhuma destas inconsistências foi resolvida por este PRD além de IN-01, em que a decisão mais recente da própria especificação prevalece.
+Nenhuma destas inconsistências foi resolvida por este PRD além de IN-01, em que a decisão mais recente da própria especificação prevalece, e de IN-03, resolvida pela DA-03.
 
 ## Resumo de validação
 
@@ -754,22 +759,20 @@ Nenhuma destas inconsistências foi resolvida por este PRD além de IN-01, em qu
 | Ferramentas MCP documentadas | 12 |
 | Jornadas | 10 |
 | Grupos de teste | 10 (T-01 a T-10), 3 deles propostos |
-| Riscos / dependências / decisões em aberto | 10 / 8 / 15 |
-| Inconsistências na especificação | 7 (IN-01 a IN-07) |
+| Riscos / dependências / decisões em aberto | 10 / 8 / 14 (mais 1 resolvida: DA-03) |
+| Inconsistências na especificação | 7 (IN-01 a IN-07); IN-01 e IN-03 resolvidas |
 
 **Decisões em aberto mais importantes**
 
 1. DA-02: funcionamento do chat embutido sem chamada a LLM.
-2. DA-03: fluxo de escrita e revisão do arquivo de layout.
-3. DA-05: segurança do endpoint HTTP local.
-4. DA-04: descoberta do servidor pela ponte stdio.
-5. DA-01: grafia e disponibilidade do nome `arquitecture`.
+2. DA-05: segurança do endpoint HTTP local.
+3. DA-04: descoberta do servidor pela ponte stdio.
+4. DA-01: grafia e disponibilidade do nome `arquitecture`.
 
 **Pontos que precisam de validação humana**
 
 - As personas da seção 5 são hipóteses.
 - As prioridades P0, P1 e P2 foram atribuídas por este PRD.
-- A fase de FR-046 e FR-047 (layout automático) foi proposta como fase 2.
 - FR-002 foi derivado do critério de aceite da fase 1, não de um requisito explícito.
 - Os grupos de teste T-06, T-07 e T-08 e o controle NFR-013 são propostas.
 - As métricas da seção 15 não têm metas.
