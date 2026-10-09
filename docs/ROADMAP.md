@@ -6,7 +6,7 @@ Este roadmap não tem datas: a ordem é fixa, o ritmo não. Documentos relaciona
 
 | Fase | Nome | Parte do MVP | Estado |
 | --- | --- | --- | --- |
-| 1 | Editor | Sim | A iniciar |
+| 1 | Editor | Sim | Em andamento: implementada; falta confirmar o nome no npm |
 | 2 | Agentes | Sim | Não iniciada |
 | 3 | Dados | Não | Não iniciada |
 | 4 | Segurança | Não | Não iniciada |
@@ -51,7 +51,7 @@ Interface (`packages/web`)
 - [x] Drill-down por duplo clique, trilha de navegação e nível na URL
 - [x] Conexões entre níveis desenhadas no ancestral visível
 - [x] Blocos com cor por `kind`, ícone, nome, linha de detalhe e contador de filhos
-- [ ] Catálogo inicial de 41 tecnologias com SVGs embutidos (40 de 41 prontos; `caddy` não existe no Devicon e usa o ícone do `kind`, DA-13)
+- [x] Catálogo inicial de 41 tecnologias com SVGs embutidos (40 com ícone próprio; `caddy` usa o ícone do `kind`, pois não existe no Devicon; DA-13)
 - [x] Criar nó pela paleta e pelo menu de contexto; conectar arrastando
 - [x] Painel lateral com árvore de nós e propriedades
 - [x] Confirmação ao remover nó com cascata
@@ -63,7 +63,7 @@ Interface (`packages/web`)
 
 CLI (`packages/cli`)
 
-- [ ] Comando `arquitecture` que sobe o servidor e abre o navegador
+- [x] Comando `arquitecture` que sobe o servidor e abre o navegador
 - [ ] Confirmar disponibilidade do nome no npm antes de publicar
 
 Verificação

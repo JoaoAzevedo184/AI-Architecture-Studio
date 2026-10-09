@@ -2,7 +2,7 @@
 
 Editor local de arquitetura de software em que agentes como Claude Code e Codex leem o repositório e montam o diagrama, e você navega por níveis de profundidade e edita à mão o que quiser.
 
-> **Status:** em definição. A especificação técnica está fechada e a fase 1 (editor) é a próxima etapa. Os comandos abaixo descrevem o comportamento planejado.
+> **Status:** a fase 1 (editor) está implementada: modelo e validação, servidor local, canvas com drill-down, ícones, edição manual, desfazer e o comando `arquitecture`. O pacote **ainda não foi publicado no npm** (o nome está por confirmar), então rode a partir do repositório (veja "Desenvolvimento"). **Ainda planejado:** tudo que envolve agentes (servidor MCP, `arquitecture mcp`, `apply_batch`, atualização ao vivo e observador de arquivo, fase 2), as lentes (fases 3 e 4) e as exportações (fase 5). As seções sobre MCP abaixo descrevem o comportamento planejado.
 
 ## O que é
 
@@ -27,15 +27,23 @@ Um único processo local é o dono dos arquivos. Interface e agente enviam opera
 
 ## Uso
 
-Na raiz do repositório:
+Na raiz do projeto que você quer mapear (depois da publicação no npm):
 
 ```bash
 npx arquitecture
 ```
 
-Isso inicia o servidor local e abre o canvas no navegador. Se `docs/architecture.json` não existir, um modelo vazio é criado.
+Isso inicia o servidor local, imprime a URL e o caminho do modelo, e abre o canvas no navegador. Se `docs/architecture.json` não existir, a ferramenta começa com um modelo vazio e só cria o arquivo na primeira edição.
 
-### Conectar um agente
+| Opção | Efeito |
+| --- | --- |
+| `--port <n>` | Porta do servidor (padrão 4517; também vale `ARQUITECTURE_PORT`, e `--port` tem prioridade). Com `--port`, se a porta estiver ocupada o comando encerra; sem ele, tenta as dez portas seguintes |
+| `--no-open` | Não abre o navegador |
+| `--help`, `--version` | Ajuda e versão |
+
+Ctrl+C encerra o servidor depois de concluir as gravações pendentes.
+
+### Conectar um agente (fase 2, ainda não disponível)
 
 Para agentes que usam stdio, registre o comando abaixo como servidor MCP:
 
@@ -114,9 +122,9 @@ Erros são estruturados, com `code`, `path`, `message` e `hint`, para que o agen
 ```
 packages/
   core/     esquema, validação e operações puras (sem I/O)
-  server/   servidor local, fila de escrita, WebSocket, adaptador MCP
+  server/   servidor local, fila de escrita, API HTTP (WebSocket e MCP na fase 2)
   web/      interface React Flow
-  cli/      comando arquitecture
+  cli/      comando arquitecture (único pacote publicável; empacota os demais)
 ```
 
 ## Documentação
@@ -148,9 +156,15 @@ packages/
 git clone https://github.com/JoaoAzevedo184/<repositorio>.git
 cd <repositorio>
 npm install
-npm run dev
-npm test
+npm run dev      # servidor (4517) + interface com recarga, no diretório atual
+npm start        # compila tudo e serve a interface compilada pelo servidor
+npm test         # testes unitários de todos os pacotes
+npm run test:package   # empacota, instala o tarball fora do repositório e roda o binário
+npm run test:e2e       # teste de aceite (Playwright) contra o binário instalado do tarball
+npm run pack     # gera o tarball em .pack/
 ```
+
+O teste de ponta a ponta precisa de um navegador: rode `npx playwright install chromium` uma vez, ou use `PW_CHANNEL=chrome` para usar o Chrome instalado.
 
 ## Autor
 

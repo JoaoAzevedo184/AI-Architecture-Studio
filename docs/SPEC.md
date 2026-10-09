@@ -138,6 +138,8 @@ Interface e agente usam o mesmo conjunto de operações do núcleo; as ferrament
 
 **Concorrência.** Sem `expectedRevision`, a operação é aplicada sobre o estado atual; como cada operação é pequena e endereçada por `id`, isso é seguro na maioria dos casos. Com `expectedRevision` diferente da atual, a resposta é `REVISION_CONFLICT` com a revisão corrente, e o cliente relê antes de tentar de novo. A interface sempre envia a revisão; o agente envia em `apply_batch`.
 
+**Operação interna `restoreSubtree`.** Existe só para o desfazer da interface e **não é ferramenta MCP**. Recebe `{ nodes, edges }` e reinsere os itens com os ids originais, validando o modelo resultante inteiro; id já existente gera `DUPLICATE_ID`. A resposta de `remove_node` traz, além dos ids, os nós e as conexões removidos por inteiro: é com eles que a interface monta a operação inversa. A interface também guarda as posições dos nós removidos e as regrava ao desfazer.
+
 **`apply_batch` é o caminho principal do agente.** Montar uma arquitetura inteira operação por operação gera dezenas de chamadas e estados intermediários no canvas. Um lote produz uma única revisão e um único evento.
 
 **Eventos para a interface.** `model.changed` (revisão e operações aplicadas; publicado somente em escrita aceita no modelo, nunca na gravação do layout), `model.invalid` (erros de uma edição externa) e `model.restored`.
@@ -253,3 +255,15 @@ Cada fase termina em algo que dá para demonstrar sozinho.
 | Nuvem | `aws`, `gcp`, `azure`, `cloudflare` |
 
 São 41 chaves. Uma tecnologia fora da lista continua válida no modelo e usa o ícone do `kind`.
+
+**Correspondência com o Devicon.** 40 das 41 chaves têm ícone próprio do Devicon, embutido no pacote. `caddy` não existe no Devicon e usa o ícone do `kind`, como qualquer chave desconhecida. Chaves cujo nome difere do Devicon:
+
+| Chave | Arquivo no Devicon |
+| --- | --- |
+| `dotnet` | `dot-net` |
+| `vue` | `vuejs` |
+| `kafka` | `apachekafka` |
+| `traefik` | `traefikproxy` |
+| `aws` | `amazonwebservices` (só existe a variante com texto, `original-wordmark`) |
+| `gcp` | `googlecloud` |
+| `django` | mesmo nome, variante `plain` (não há `original`) |

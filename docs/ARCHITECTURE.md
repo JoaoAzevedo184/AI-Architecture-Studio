@@ -211,6 +211,8 @@ O adaptador roda dentro do servidor e é exposto por HTTP em `127.0.0.1`. Para a
 | `apply_batch` | Várias operações, tudo ou nada, uma revisão e um evento |
 | `validate` | Erros do modelo atual |
 
+**Operação interna `restoreSubtree`.** Existe só para o desfazer da interface e **não é ferramenta MCP**. Recebe `{ nodes, edges }` e reinsere os itens com os ids originais, validando o modelo resultante inteiro; id já existente gera `DUPLICATE_ID`. A resposta de `remove_node` traz, além dos ids, os nós e as conexões removidos por inteiro: é com eles que a interface monta a operação inversa. A interface também guarda as posições dos nós removidos e as regrava ao desfazer.
+
 **Concorrência.** Toda escrita aceita `expectedRevision`. Sem ela, a operação é aplicada sobre o estado atual. Com valor diferente do atual, a resposta é `REVISION_CONFLICT`.
 
 **Eventos.** `model.changed`, `model.invalid` e `model.restored`, publicados por WebSocket. `model.changed` é publicado somente em escrita aceita no modelo; gravar o layout não publica evento.

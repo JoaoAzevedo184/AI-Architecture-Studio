@@ -7,7 +7,7 @@
 | Produto | AI Architecture Studio |
 | Tipo | Product Requirements Document |
 | Finalidade | Referência de produto para orientar o desenvolvimento com Claude Code e OpenAI Codex |
-| Versão | 0.6 |
+| Versão | 0.7 |
 | Data | 2026-10-08 |
 | Status | Rascunho, não aprovado |
 | Documento de origem | AI Architecture Studio — Especificação Técnica (citada como **ET §n**) |
@@ -272,7 +272,7 @@ Os requisitos das fases 3 a 5 estão descritos na seção 14 e não recebem iden
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | FR-021 | Catálogo local de ícones | `tech` é mapeado para um SVG do Devicon embutido no pacote | Ícones sem depender de rede | Sistema | P0 | 1 | Com a rede desligada, um nó com `tech: "nginx"` mostra o ícone do Nginx | — | ET §6 |
 | FR-022 | Tecnologia desconhecida | `tech` fora do catálogo é aceito e usa o ícone do `kind` | Não bloquear o agente por falta de ícone | Dev, agente | P0 | 1 | Um nó com `tech: "xyz"` é gravado e exibe o ícone do `kind` | FR-021 | ET §3, §9 |
-| FR-023 | Catálogo inicial | O catálogo inicial tem as 41 chaves listadas na ET §9, em sete grupos | Cobrir as tecnologias comuns | Sistema | P1 | 1 | Cada uma das 41 chaves resolve para um ícone. A correspondência com os nomes do Devicon precisa ser verificada (DA-13) | FR-021 | ET §9 |
+| FR-023 | Catálogo inicial | O catálogo inicial tem as 41 chaves listadas na ET §9, em sete grupos | Cobrir as tecnologias comuns | Sistema | P1 | 1 | Das 41 chaves, 40 resolvem para um ícone próprio do Devicon; `caddy` não existe no Devicon e usa o ícone do `kind`. Aliases: `dotnet`→`dot-net`, `vue`→`vuejs`, `kafka`→`apachekafka`, `traefik`→`traefikproxy`, `aws`→`amazonwebservices` (só variante com texto), `gcp`→`googlecloud`, `django` na variante `plain` (DA-13, resolvida) | FR-021 | ET §9 |
 
 ### 8.6. Persistência
 
@@ -651,7 +651,6 @@ Sem datas nem estimativas. Detalhes de tarefas em [ROADMAP.md](ROADMAP.md).
 | DA-10 | Comportamento de `set_lens` para lente desconhecida | Seção 9 |
 | DA-11 | Política de migração entre valores de `schemaVersion`, incluindo arquivo mais novo que a ferramenta | Compatibilidade futura |
 | DA-12 | Metas de desempenho e limites de tamanho do modelo | NFR-015, NFR-016 |
-| DA-13 | Correspondência entre as 41 chaves de `tech` e os nomes de ícone do Devicon | FR-023 |
 | DA-14 | Mapeamento da hierarquia e das lentes nas exportações | Fase 5 |
 | DA-15 | Formato do alias em `apply_batch` e esquemas completos dos parâmetros das ferramentas | FR-038, seção 9 |
 
@@ -661,6 +660,7 @@ Sem datas nem estimativas. Detalhes de tarefas em [ROADMAP.md](ROADMAP.md).
 | --- | --- | --- | --- |
 | DA-03 | 2026-10-08 | Fluxo de escrita do arquivo de layout | O servidor grava `docs/architecture.layout.json` pela mesma fila, de forma atômica. Não incrementa `revision`, não gera `REVISION_CONFLICT` e vale a última escrita. Esquema próprio `{ schemaVersion, positions }`. `id` órfão é ignorado ao carregar e removido na próxima gravação. A interface grava ao soltar o nó. Arquivo ausente ou inválido equivale a "sem posições"; nós sem posição recebem grade até existir o layout por ELK |
 | DA-09 | 2026-10-08 | Criação automática de `docs/` e do modelo vazio | Em pasta sem modelo, o servidor inicia com um modelo vazio em memória (`meta.name` = nome da pasta). O arquivo e a pasta `docs/` só são criados na primeira escrita aceita |
+| DA-13 | 2026-10-09 | Correspondência entre as 41 chaves de `tech` e o Devicon | 40 chaves têm ícone próprio do Devicon, embutido no pacote; `caddy` não existe no Devicon e usa o ícone do `kind`. Tabela de alias na ET §9 (`dotnet`, `vue`, `kafka`, `traefik`, `aws`, `gcp`; `django` em variante `plain`) |
 | DA-06 (parte) | 2026-10-08 | Modelo inválido na inicialização | O servidor sobe em estado `invalid`, expõe os erros nas leituras, recusa toda escrita no modelo (`MODEL_INVALID`, 503) e não sobrescreve o arquivo. A DA-06 continua aberta só para a restauração por agente via MCP |
 
 ## 19. Matriz de rastreabilidade
@@ -763,7 +763,7 @@ Nenhuma destas inconsistências foi resolvida por este PRD além de IN-01, em qu
 | Ferramentas MCP documentadas | 12 |
 | Jornadas | 10 |
 | Grupos de teste | 10 (T-01 a T-10), 3 deles propostos |
-| Riscos / dependências / decisões em aberto | 10 / 8 / 13 (mais 2 resolvidas: DA-03 e DA-09; a DA-06 está resolvida em parte) |
+| Riscos / dependências / decisões em aberto | 10 / 8 / 12 (mais 3 resolvidas: DA-03, DA-09 e DA-13; a DA-06 está resolvida em parte) |
 | Inconsistências na especificação | 7 (IN-01 a IN-07); IN-01 e IN-03 resolvidas |
 
 **Decisões em aberto mais importantes**
