@@ -8,10 +8,13 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "test:e2e": "npm run build && npm run test:e2e -w @arquitecture/web",
+    "test:e2e": "node scripts/e2e-packed.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "dev": "npm run build -w @arquitecture/core -w @arquitecture/server && concurrently -k -n servidor,interface \"node packages/server/dist/main.js\" \"npm run dev -w @arquitecture/web\"",
-    "start": "npm run build && node packages/server/dist/main.js"
+    "start": "npm run build && node packages/server/dist/main.js",
+    "pack": "npm run build && npm pack -w arquitecture --pack-destination .pack",
+    "test:package": "npm run build && npm run test:package -w arquitecture",
+    "test:e2e:dev": "npm run build && npm run test:e2e -w @arquitecture/web"
   },
   "engines": {
     "node": ">=20"
