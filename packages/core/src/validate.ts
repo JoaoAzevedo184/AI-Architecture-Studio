@@ -9,7 +9,7 @@ import type {
   ModelError,
 } from "./types.js";
 
-// logger: false avoids console.warn (core does no I/O); strict: false accepts free-form lens schemas.
+// logger: false evita console.warn (o núcleo não faz I/O); strict: false aceita esquemas de lente livres.
 const ajv = new Ajv({ allErrors: true, strict: false, logger: false });
 const validateModelShape = ajv.compile(modelSchema);
 const validateLayoutShape = ajv.compile(layoutSchema);
@@ -27,7 +27,7 @@ export function makeError(
   return { code, message, path, hint };
 }
 
-/** Translates an Ajv error into the structured error format (Portuguese text). */
+/** Traduz um erro do Ajv para o formato estruturado, com texto em português. */
 function fromAjv(err: ErrorObject, code: ErrorCode, base: string): ModelError {
   const p = err.params as Record<string, unknown>;
   let path = base + err.instancePath;
@@ -63,7 +63,7 @@ function fromAjv(err: ErrorObject, code: ErrorCode, base: string): ModelError {
 const fromAjvAll = (errs: ErrorObject[] | null | undefined, code: ErrorCode, base = ""): ModelError[] =>
   (errs ?? []).map((e) => fromAjv(e, code, base));
 
-/** Ancestor ids of `id`; cycle-safe. */
+/** Ids dos ancestrais de `id`; seguro contra ciclos. */
 function ancestorsOf(id: string, byId: Map<string, { parent: string | null }>): Set<string> {
   const seen = new Set<string>();
   let cur = byId.get(id)?.parent ?? null;
@@ -128,8 +128,8 @@ export type ModelValidation = { ok: true; model: ArchitectureModel } | Failure;
 export type LayoutValidation = { ok: true; layout: LayoutFile } | Failure;
 
 /**
- * Validates shape (JSON Schema) and integrity. If the shape fails, only shape
- * errors are returned: integrity rules assume a well-formed document.
+ * Valida forma (JSON Schema) e integridade. Se a forma falhar, só os erros de
+ * forma são devolvidos: as regras de integridade pressupõem um documento bem formado.
  */
 export function validateModel(model: unknown, lensSchemas: LensSchemas = {}): ModelValidation {
   if (!validateModelShape(model)) {
@@ -147,7 +147,7 @@ export function validateLayout(layout: unknown): LayoutValidation {
   return { ok: true, layout: layout as unknown as LayoutFile };
 }
 
-/** Drops positions of ids that do not exist in the model. */
+/** Descarta posições de ids que não existem no modelo. */
 export function pruneLayout(layout: LayoutFile, model: ArchitectureModel): LayoutFile {
   const ids = new Set(model.nodes.map((n) => n.id));
   const positions: LayoutFile["positions"] = {};

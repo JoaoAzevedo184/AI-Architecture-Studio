@@ -2,7 +2,7 @@ import { expect } from "vitest";
 import { addEdge, addNode, createEmptyModel } from "../src/index.js";
 import type { ArchitectureModel, IdGenerator, ModelError, OpResult } from "../src/index.js";
 
-/** Deterministic generator: n_1, n_2, e_3... */
+/** Gerador determinístico: n_1, n_2, e_3... */
 export function seqIds(): IdGenerator {
   let n = 0;
   return (entity) => `${entity === "node" ? "n" : "e"}_${++n}`;
@@ -20,7 +20,7 @@ export function clone<T>(o: T): T {
   return JSON.parse(JSON.stringify(o)) as T;
 }
 
-/** Example from SPEC section 3. */
+/** Exemplo da SPEC seção 3. */
 export const specExample = {
   schemaVersion: 1,
   revision: 42,
@@ -56,7 +56,7 @@ export function expectOk<T extends object>(r: OpResult<T>): asserts r is Extract
   if (!r.ok) throw new Error("esperava sucesso: " + JSON.stringify(r.errors));
 }
 
-/** Asserts an error with the given code and path exists, with message and hint. */
+/** Verifica que existe um erro com o código e o path dados, com message e hint. */
 export function expectError(r: { ok: boolean; errors?: ModelError[] }, code: string, path: string): ModelError {
   expect(r.ok).toBe(false);
   const e = r.errors!.find((x) => x.code === code && x.path === path);
@@ -66,7 +66,7 @@ export function expectError(r: { ok: boolean; errors?: ModelError[] }, code: str
   return e!;
 }
 
-/** Docker (n_2) holding api (n_3), db (n_4), web (n_5); nginx (n_1) outside. Edges: nginx→api, api→db, nginx→web. */
+/** Docker (n_2) com api (n_3), db (n_4), web (n_5); nginx (n_1) fora. Conexões: nginx→api, api→db, nginx→web. */
 export function sampleModel(): ArchitectureModel {
   const gen = seqIds();
   let m = createEmptyModel("Exemplo");

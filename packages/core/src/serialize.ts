@@ -1,6 +1,6 @@
 import type { ArchEdge, ArchNode, ArchitectureModel, LayoutFile } from "./types.js";
 
-/** Sorts object keys recursively; arrays keep their order. */
+/** Ordena as chaves de objetos recursivamente; arrays mantêm a ordem. */
 function sortKeys(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(sortKeys);
   if (v !== null && typeof v === "object") {
@@ -14,7 +14,7 @@ function sortKeys(v: unknown): unknown {
   return v;
 }
 
-/** Builds an object with keys in the given order, skipping undefined ones. */
+/** Monta um objeto com as chaves na ordem dada, omitindo as indefinidas. */
 function ordered(src: object, keys: readonly string[]): Record<string, unknown> {
   const s = src as Record<string, unknown>;
   const out: Record<string, unknown> = {};

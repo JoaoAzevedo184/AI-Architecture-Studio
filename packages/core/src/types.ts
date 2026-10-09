@@ -57,10 +57,10 @@ export interface LayoutFile {
   positions: Record<string, Position>;
 }
 
-/** Lens name to JSON Schema for the `node.lenses[name]` fragment. */
+/** Nome de lente para o JSON Schema do trecho `node.lenses[nome]`. */
 export type LensSchemas = Record<string, object>;
 
-/** Injected id generator; the server provides the real one. */
+/** Gerador de id injetado; o servidor fornece o real. */
 export type IdGenerator = (entity: "node" | "edge") => string;
 
 export type ErrorCode =
@@ -72,15 +72,16 @@ export type ErrorCode =
   | "EDGE_SELF_LOOP"
   | "EDGE_TO_ANCESTOR"
   | "LENS_INVALID"
-  | "REVISION_CONFLICT";
+  | "REVISION_CONFLICT"
+  | "NOT_FOUND";
 
 export interface ModelError {
   code: ErrorCode;
   message: string;
-  /** JSON pointer (RFC 6901) inside the validated document; "" is the root. */
+  /** Ponteiro JSON (RFC 6901) dentro do documento validado; "" é a raiz. */
   path: string;
   hint: string;
-  /** Only on REVISION_CONFLICT. */
+  /** Só em REVISION_CONFLICT. */
   currentRevision?: number;
 }
 

@@ -28,7 +28,7 @@ export const modelSchema = {
           tech: str,
           description: { type: "string" },
           parent: { type: ["string", "null"], minLength: 1 },
-          // Unknown lenses are preserved: free-form value.
+          // Lente desconhecida é preservada: valor livre.
           lenses: { type: "object" },
         },
       },
