@@ -8,10 +8,11 @@ export {
   updateNode,
   moveNode,
   removeNode,
+  restoreSubtree,
   addEdge,
   updateEdge,
   removeEdge,
   checkRevision,
 } from "./operations.js";
-export type { OpResult, Success, NewNode, NodePatch, NewEdge, EdgePatch } from "./operations.js";
+export type { OpResult, Success, Subtree, RemovedSubtree, NewNode, NodePatch, NewEdge, EdgePatch } from "./operations.js";
 export { serializeModel, serializeLayout } from "./serialize.js";

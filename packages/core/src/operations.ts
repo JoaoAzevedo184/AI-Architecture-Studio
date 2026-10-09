@@ -43,6 +43,18 @@ export interface EdgePatch {
   kind?: EdgeKind;
 }
 
+/** Nós e conexões removidos por inteiro; serve de entrada para `restoreSubtree`. */
+export interface Subtree {
+  nodes: ArchNode[];
+  edges: ArchEdge[];
+}
+export interface RemovedSubtree {
+  removedNodeIds: string[];
+  removedEdgeIds: string[];
+  removedNodes: ArchNode[];
+  removedEdges: ArchEdge[];
+}
+
 export function createEmptyModel(name: string, description?: string): ArchitectureModel {
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -111,7 +123,7 @@ export function removeNode(
   model: ArchitectureModel,
   id: string,
   lensSchemas?: LensSchemas,
-): OpResult<{ removedNodeIds: string[]; removedEdgeIds: string[] }> {
+): OpResult<RemovedSubtree> {
   if (!model.nodes.some((n) => n.id === id)) return notFound("nó", id);
   // Coleta descendentes; o conjunto `doomed` protege contra ciclos em modelos externos.
   const doomed = new Set<string>([id]);
@@ -124,15 +136,25 @@ export function removeNode(
       }
     }
   }
-  const removedNodeIds = model.nodes.filter((n) => doomed.has(n.id)).map((n) => n.id);
+  const removedNodes = model.nodes.filter((n) => doomed.has(n.id));
+  const removedNodeIds = removedNodes.map((n) => n.id);
   const gone = model.edges.filter((e) => doomed.has(e.source) || doomed.has(e.target));
   const removedEdgeIds = gone.map((e) => e.id);
+  const removedEdges = gone;
   const next: ArchitectureModel = {
     ...model,
     nodes: model.nodes.filter((n) => !doomed.has(n.id)),
     edges: model.edges.filter((e) => !gone.includes(e)),
   };
-  return finish(next, { removedNodeIds, removedEdgeIds }, lensSchemas);
+  return finish(next, { removedNodeIds, removedEdgeIds, removedNodes, removedEdges }, lensSchemas);
+}
+
+/**
+ * Reinsere nós e conexões com os ids originais (inversa de `removeNode`).
+ * Operação interna da interface; não é ferramenta MCP. Ids repetidos geram DUPLICATE_ID.
+ */
+export function restoreSubtree(model: ArchitectureModel, subtree: Subtree, lensSchemas?: LensSchemas): OpResult {
+  return finish({ ...model, nodes: [...model.nodes, ...subtree.nodes], edges: [...model.edges, ...subtree.edges] }, {}, lensSchemas);
 }
 
 export function addEdge(model: ArchitectureModel, input: NewEdge, generateId: IdGenerator, lensSchemas?: LensSchemas): OpResult<{ id: string }> {
