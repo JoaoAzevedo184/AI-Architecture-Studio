@@ -1,0 +1,63 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.danger { color: var(--danger); }
+input, select, textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; width: 100%; }
+
+.app { display: grid; grid-template-columns: 300px 1fr; height: 100%; }
+.sidebar { background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+.sidebar h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 0; padding: 12px 12px 6px; }
+.tree { overflow: auto; flex: 1; padding: 0 6px 8px; min-height: 120px; }
+.tree-item { display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 6px; cursor: pointer; }
+.tree-item:hover { background: var(--panel-2); }
+.tree-item.selected { background: var(--accent); color: #fff; }
+.tree-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.props { border-top: 1px solid var(--border); padding: 0 12px 12px; overflow: auto; max-height: 55%; }
+.props label { display: block; margin-top: 8px; color: var(--text-muted); font-size: 12px; }
+.props .row { display: flex; gap: 6px; margin-top: 10px; }
+.props ul { margin: 4px 0 0; padding-left: 16px; }
+.muted { color: var(--text-muted); }
+
+.main { display: flex; flex-direction: column; min-width: 0; }
+.topbar { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
+.crumbs { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+.crumbs button { background: none; border: none; padding: 2px 4px; color: var(--accent); }
+.crumbs button:last-child { color: var(--text); cursor: default; }
+.tabs { display: flex; gap: 4px; }
+.tabs button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.palette { display: flex; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
+.palette button { display: flex; align-items: center; gap: 6px; border-left: 3px solid var(--c); }
+.canvas { flex: 1; position: relative; min-height: 0; }
+.json { margin: 0; padding: 12px; overflow: auto; flex: 1; font: 13px/1.5 ui-monospace, monospace; user-select: text; }
+
+.arch-node { background: var(--panel); border: 2px solid var(--c); border-radius: 10px; width: 200px; height: 96px; padding: 8px 10px; display: flex; gap: 10px; align-items: center; position: relative; }
+.arch-node.selected { box-shadow: 0 0 0 3px var(--accent); }
+.arch-icon { width: 36px; height: 36px; border-radius: 8px; background: var(--icon-chip); display: grid; place-items: center; flex: none; color: var(--c); }
+.arch-icon img { width: 24px; height: 24px; }
+.arch-icon svg { width: 22px; height: 22px; }
+.arch-text { min-width: 0; }
+.arch-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arch-detail { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.badge { position: absolute; top: -10px; padding: 0 7px; border-radius: 10px; font-size: 12px; background: var(--panel-2); border: 1px solid var(--border); }
+.badge.children { right: 8px; }
+.badge.external { left: 8px; color: var(--kind-proxy); }
+.react-flow__handle { background: var(--accent); width: 9px; height: 9px; }
+.react-flow { --xy-background-color: var(--bg); --xy-edge-label-background-color: var(--panel); --xy-edge-label-color: var(--text); }
+
+.context-menu { position: fixed; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 4px; z-index: 20; display: flex; flex-direction: column; min-width: 170px; }
+.context-menu button { text-align: left; border: none; background: none; }
+.context-menu button:hover { background: var(--panel-2); }
+
+.toasts { position: fixed; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 30; max-width: 380px; }
+.toast { background: var(--panel); border: 1px solid var(--danger); border-radius: 8px; padding: 8px 12px; display: flex; gap: 10px; justify-content: space-between; }
+.toast.info { border-color: var(--accent); }
+.toast button { border: none; background: none; padding: 0 4px; }
+
+.overlay { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; z-index: 40; }
+.dialog { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; max-width: 420px; }
+.dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.fullscreen { height: 100%; padding: 32px; overflow: auto; }
+.fullscreen li { margin-bottom: 10px; }
