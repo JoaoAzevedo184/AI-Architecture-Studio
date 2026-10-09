@@ -15,7 +15,11 @@ let dir: string;
 let server: ChildProcess | undefined;
 
 async function startServer() {
-  server = spawn(process.execPath, [MAIN, dir], { env: { ...process.env, ARQUITECTURE_PORT: String(PORT) }, stdio: "ignore" });
+  // Com ARQUITECTURE_BIN, roda o binário instalado a partir do tarball (a raiz é o diretório de trabalho).
+  const bin = process.env.ARQUITECTURE_BIN;
+  server = bin
+    ? spawn(bin, ["--no-open", "--port", String(PORT)], { cwd: dir, stdio: "ignore" })
+    : spawn(process.execPath, [MAIN, dir], { env: { ...process.env, ARQUITECTURE_PORT: String(PORT) }, stdio: "ignore" });
   for (let i = 0; i < 100; i++) {
     try {
       if ((await fetch(`${BASE}/api/health`)).ok) return;
@@ -174,6 +178,49 @@ test("cascade removal asks for confirmation with counts", async ({ page }) => {
   await expect(page.getByTestId("confirm-remove")).toContainText("2 nós e 0 conexões");
   await page.getByTestId("confirm-ok").click();
   await expect(page.locator('[data-testid^="node-"]')).toHaveCount(0);
+});
+
+test("undo of a cascade removal restores nodes, edges, ids and positions", async ({ page }) => {
+  await page.goto(BASE);
+  await create(page, "external", "Internet");
+  await create(page, "group", "Docker");
+  await connect(page, "Internet", "Docker");
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+  await node(page, "Docker").dblclick();
+  await create(page, "service", "API");
+  await create(page, "database", "DB");
+  await connect(page, "API", "DB");
+  await page.getByTestId("breadcrumb").getByRole("button", { name: "Raiz" }).click();
+
+  // Move o Docker para uma posição própria antes de remover
+  const box = (await node(page, "Docker").boundingBox())!;
+  await page.mouse.move(box.x + 100, box.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 100, box.y + 200, { steps: 8 });
+  await page.mouse.up();
+  await expect.poll(async () => (await snapshot()).layout.layout.positions).not.toEqual({});
+  await page.waitForTimeout(300);
+  const before = await snapshot();
+  const ids = (m: any) => [m.nodes.map((n: any) => n.id).sort(), m.edges.map((e: any) => e.id).sort()];
+
+  await node(page, "Docker").click();
+  await page.getByTestId("remove").click();
+  await expect(page.getByTestId("confirm-remove")).toContainText("3 nós e 2 conexões");
+  await page.getByTestId("confirm-ok").click();
+  await expect(node(page, "Docker")).toHaveCount(0);
+
+  await page.locator(".canvas").click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press("Control+z");
+  await expect(node(page, "Docker")).toBeVisible();
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+
+  const after = await snapshot();
+  expect(ids(after.model.model)).toEqual(ids(before.model.model));
+  expect(after.model.model.nodes.find((n: any) => n.name === "API")).toEqual(before.model.model.nodes.find((n: any) => n.name === "API"));
+  expect(after.layout).toEqual(before.layout);
+  await node(page, "Docker").dblclick();
+  await expect(page.locator('[data-testid^="node-"]')).toHaveCount(2);
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
 });
 
 test("invalid model on disk: full-screen errors, no editing, file untouched", async ({ page }) => {

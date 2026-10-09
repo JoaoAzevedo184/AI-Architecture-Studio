@@ -181,9 +181,29 @@ describe("POST /api/operations", () => {
     await op("addNode", { name: "O", kind: "service" });
     await op("addEdge", { source: "n_2", target: "n_3" });
     const r = await op("removeNode", { id: "n_1" });
-    expect(r.body.result).toEqual({ removedNodeIds: ["n_1", "n_2"], removedEdgeIds: ["e_4"] });
+    expect(r.body.result).toMatchObject({ removedNodeIds: ["n_1", "n_2"], removedEdgeIds: ["e_4"] });
     expect(r.body.model.nodes.map((n: { id: string }) => n.id)).toEqual(["n_3"]);
     expect((await op("removeNode", { id: "n_1" })).status).toBe(404);
+  });
+
+  it("removeNode returns the removed items in full and restoreSubtree brings them back with the same ids", async () => {
+    const { op } = await boot(await tmp());
+    await op("addNode", { name: "P", kind: "group" });
+    await op("addNode", { name: "C", kind: "service", parent: "n_1" });
+    await op("addNode", { name: "O", kind: "service" });
+    await op("addEdge", { source: "n_2", target: "n_3", label: "x" });
+    const before = (await op("addNode", { name: "Z", kind: "cache" })).body.model;
+    const rm = await op("removeNode", { id: "n_1" });
+    expect(rm.body.result.removedNodes.map((n: { id: string }) => n.id)).toEqual(["n_1", "n_2"]);
+    expect(rm.body.result.removedEdges).toEqual([{ id: "e_4", source: "n_2", target: "n_3", label: "x", kind: "sync" }]);
+    const back = await op("restoreSubtree", { nodes: rm.body.result.removedNodes, edges: rm.body.result.removedEdges });
+    expect(back.status).toBe(200);
+    const ids = (m: { nodes: { id: string }[]; edges: { id: string }[] }) => [m.nodes.map((n) => n.id).sort(), m.edges.map((e) => e.id).sort()];
+    expect(ids(back.body.model)).toEqual(ids(before));
+    const dup = await op("restoreSubtree", { nodes: rm.body.result.removedNodes, edges: [] });
+    expect(dup.status).toBe(422);
+    expect(dup.body.errors[0].code).toBe("DUPLICATE_ID");
+    expect((await op("restoreSubtree", { nodes: [] })).status).toBe(400);
   });
 
   it("updateEdge and removeEdge; 422 EDGE_SELF_LOOP; 404 for unknown ids", async () => {
@@ -372,6 +392,18 @@ describe("static web files", () => {
   it("without webDir, / is not served", async () => {
     const { s } = await boot(await tmp());
     expect((await s.app.inject({ method: "GET", url: "/" })).statusCode).toBe(404);
+  });
+});
+
+describe("shutdown", () => {
+  it("close() waits for queued writes to reach the disk", async () => {
+    const d = await tmp();
+    const s = createServer({ rootDir: d, idGenerator: seqIds() });
+    await s.app.ready();
+    const pending = s.store.applyOperation("addNode", { name: "A", kind: "service" });
+    await s.close();
+    expect((await pending).ok).toBe(true);
+    expect(JSON.parse(await readFile(modelFile(d), "utf8")).nodes).toHaveLength(1);
   });
 });
 
